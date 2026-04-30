@@ -1,0 +1,1649 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Interactive Train Maze</title>
+
+    <!-- Importing a magical Harry Potter style font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Macondo&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      :root {
+        --castle-color: #010c19;
+        --land-height: 7em;
+      }
+
+      body {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        margin: 0;
+        /* Magical night sky background gradient */
+        background: linear-gradient(to bottom, #020111 0%, #20124d 100%);
+        font-family: sans-serif;
+      }
+
+      /* ====== NEW BACKGROUND SCENERY ====== */
+      .scenery {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        overflow: hidden;
+        z-index: -1;
+        pointer-events: none;
+      }
+
+      /* Custom Dragon Canvas Integration */
+      #c {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        z-index: 2; /* Sets it above the castle but below the maze */
+        pointer-events: none;
+      }
+
+      /* The Moon */
+      .moon {
+        position: absolute;
+        top: 8%;
+        right: 12%;
+        width: 90px;
+        height: 90px;
+        background: #fdfcd6;
+        border-radius: 50%;
+        box-shadow:
+          0 0 50px 15px rgba(253, 252, 214, 0.3),
+          inset -15px -15px 30px rgba(0, 0, 0, 0.1);
+        z-index: 0;
+      }
+
+      /* Animated Stars - Shining and Subtle Drifting */
+      @keyframes twinkle {
+        0% {
+          opacity: 0.2;
+          transform: scale(0.8);
+        }
+        50% {
+          opacity: 1;
+          transform: scale(1.2);
+        }
+        100% {
+          opacity: 0.2;
+          transform: scale(0.8);
+        }
+      }
+
+      @keyframes drift {
+        0% {
+          transform: translate(0px, 0px);
+        }
+        50% {
+          transform: translate(-8px, -4px);
+        }
+        100% {
+          transform: translate(0px, 0px);
+        }
+      }
+
+      .star-layer {
+        position: absolute;
+        width: 2px;
+        height: 2px;
+        background: transparent;
+        border-radius: 50%;
+        z-index: 0;
+      }
+      .star-layer.one {
+        box-shadow:
+          10vw 10vh #fff,
+          20vw 35vh #fff,
+          45vw 15vh #fff,
+          65vw 40vh #fff,
+          85vw 10vh #fff,
+          90vw 55vh #fff,
+          30vw 70vh #fff,
+          60vw 80vh #fff,
+          5vw 60vh #fff;
+        animation:
+          twinkle 3s infinite ease-in-out,
+          drift 20s infinite ease-in-out;
+      }
+      .star-layer.two {
+        width: 3px;
+        height: 3px;
+        box-shadow:
+          15vw 50vh #f1e4b3,
+          40vw 25vh #f1e4b3,
+          75vw 60vh #f1e4b3,
+          80vw 25vh #f1e4b3,
+          25vw 85vh #f1e4b3,
+          50vw 85vh #f1e4b3;
+        animation:
+          twinkle 4s infinite ease-in-out reverse,
+          drift 25s infinite ease-in-out reverse;
+      }
+      .star-layer.three {
+        box-shadow:
+          25vw 5vh #fff,
+          55vw 45vh #fff,
+          75vw 85vh #fff,
+          95vw 30vh #fff,
+          35vw 20vh #fff,
+          8vw 20vh #fff;
+        animation:
+          twinkle 2.5s infinite ease-in-out 1s,
+          drift 18s infinite ease-in-out;
+      }
+
+      /* ====== USER'S CUSTOM CSS CASTLES ====== */
+      .castle-container {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        /* Dynamic font scaling explicitly set to user requirements */
+        font-size: 1.2vw; /* Desktop size */
+        pointer-events: none;
+        z-index: 1; /* Sets the castle strictly BEHIND the canvas dragons */
+        filter: saturate(60%) sepia(30%);
+      }
+
+      /* Mobile size overrides */
+      @media (max-width: 768px) {
+        .castle-container {
+          /*  font-size: 0.5vw;*/
+        }
+
+        /* Fix the letter on mobile screens so it isn't too narrow */
+        #letter-overlay {
+          padding: 2rem 1.5rem !important; /* Reduce thick padding */
+          max-width: 95% !important; /* Allow it to fill more screen width */
+        }
+
+        /* Scale down fonts and logo for mobile letter */
+        .letter-greeting {
+          font-size: 1.8rem !important;
+          margin-right: 45px !important; /* Space for the smaller logo */
+        }
+        .letter-body {
+          font-size: 1.2rem !important;
+        }
+        .letter-signoff {
+          font-size: 1.4rem !important;
+        }
+        .letter-logo {
+          width: 60px !important;
+          top: -10px !important;
+          right: -10px !important;
+        }
+      }
+
+      /* Base wrapper for a single castle acting as a 0px anchor point */
+      .castle {
+        position: absolute;
+        bottom: -2px; /* Hides any tiny pixel gaps at the bottom of the screen */
+        width: 0;
+        height: 0;
+      }
+
+      /* The Land Base */
+      .land {
+        position: absolute;
+        left: 50%;
+        bottom: 0;
+        transform: translate(-50%, 0);
+        width: 75em;
+        height: var(--land-height);
+        background: radial-gradient(
+            ellipse at bottom,
+            #000d1c 0 20%,
+            var(--castle-color) 50% 70%,
+            transparent 70% 100%
+          )
+          50% 0 / 105% 100%;
+      }
+
+      /* Elevates the buildings so they sit ON the land */
+      .buildings {
+        position: absolute;
+        left: 0;
+        bottom: calc(var(--land-height) * 0.8);
+        width: 0;
+        height: 0;
+      }
+
+      /* Positions for the left and right duplicated castles */
+      .left-castle {
+        left: 15vw;
+      }
+
+      .right-castle {
+        right: 15vw;
+        /* Flipping the right castle perfectly mirrors the scene! */
+        transform: scaleX(-1);
+      }
+
+      .b1,
+      .b2,
+      .b3,
+      .b4,
+      .b5 {
+        position: absolute;
+        background: var(--castle-color);
+        transform: translate(-50%, 0);
+      }
+
+      .roof {
+        position: absolute;
+        left: 50%;
+        transform: translate(-50%, 0);
+        background: conic-gradient(
+          from 90deg at 50% 0%,
+          transparent 0deg 63deg,
+          var(--castle-color) 63deg 117deg,
+          transparent 117deg
+        );
+      }
+
+      .door {
+        position: absolute;
+        left: 50%;
+        bottom: 0;
+        transform: translate(-50%, 0);
+        border-radius: 50% 50% 5% 5% / 30% 30% 5% 5%;
+        background: radial-gradient(at 50% 100%, #fff0d8 0 70%, #ff2900 70%) 0
+          50% / 100% 120%;
+      }
+
+      /* Base Window Styles */
+      .w1,
+      .w2,
+      .w3,
+      .w4,
+      .w5,
+      .w6,
+      .w1-2,
+      .w3-4,
+      .w1-2-c {
+        position: absolute;
+        transform: translate(-50%, 0);
+        border-radius: 50% 50% 5% 5% / 30% 30% 5% 5%;
+        background:
+          linear-gradient(
+            transparent 0 35%,
+            var(--castle-color) 35% 45%,
+            transparent 45%
+          ),
+          linear-gradient(
+            to right,
+            transparent 0 45%,
+            var(--castle-color) 45% 55%,
+            transparent 55%
+          ),
+          radial-gradient(at 50% 100%, #ffffd7 0 45%, #f8ef9d 60%);
+      }
+
+      .w1-2-c {
+        border-radius: 50%;
+      }
+
+      /* Building 1 */
+      .b1 {
+        width: 8em;
+        height: 15em;
+        left: 0;
+        bottom: 0;
+      }
+      .b1 .roof {
+        bottom: calc(15em - 0.05em);
+        width: 8em;
+        height: 8em;
+      }
+      .b1 .door {
+        width: 3em;
+        height: 4.5em;
+      }
+      .b1 .w1,
+      .b1 .w2,
+      .b1 .w3,
+      .b1 .w4,
+      .b1 .w5,
+      .b1 .w6 {
+        width: 1.6em;
+        height: 2.4em;
+      }
+      .b1 .w1,
+      .b1 .w3,
+      .b1 .w5 {
+        left: 2.4em;
+      }
+      .b1 .w2,
+      .b1 .w4,
+      .b1 .w6 {
+        left: 5.6em;
+      }
+      .b1 .w1,
+      .b1 .w2 {
+        bottom: 75%;
+      }
+      .b1 .w3,
+      .b1 .w4 {
+        bottom: 47%;
+      }
+      .b1 .w5,
+      .b1 .w6 {
+        bottom: 19%;
+      }
+
+      /* Building 2 */
+      .b2 {
+        width: 5em;
+        height: 12em;
+        left: -6em;
+        bottom: 0;
+        transform: translate(-50%, 0) rotate(-8deg);
+      }
+      .b2 .roof {
+        bottom: calc(12em - 0.05em);
+        width: 5em;
+        height: 5em;
+      }
+      .b2 .w1,
+      .b2 .w2,
+      .b2 .w3,
+      .b2 .w4,
+      .b2 .w5,
+      .b2 .w6 {
+        width: 1em;
+        height: 1.5em;
+      }
+      .b2 .w1,
+      .b2 .w3,
+      .b2 .w5 {
+        left: 1.5em;
+      }
+      .b2 .w2,
+      .b2 .w4,
+      .b2 .w6 {
+        left: 3.5em;
+      }
+      .b2 .w1,
+      .b2 .w2 {
+        bottom: 75%;
+      }
+      .b2 .w3,
+      .b2 .w4 {
+        bottom: 47%;
+      }
+      .b2 .w5,
+      .b2 .w6 {
+        bottom: 19%;
+      }
+
+      /* Building 3 */
+      .b3 {
+        width: 5em;
+        height: 12em;
+        left: 6em;
+        bottom: 0;
+        transform: translate(-50%, 0) rotate(8deg);
+      }
+      .b3 .roof {
+        bottom: calc(12em - 0.05em);
+        width: 5em;
+        height: 5em;
+      }
+      .b3 .w3,
+      .b3 .w4,
+      .b3 .w5,
+      .b3 .w6 {
+        width: 1em;
+        height: 1.5em;
+      }
+      .b3 .w1-2-c {
+        width: 1.7em;
+        height: 1.7em;
+        left: 50%;
+        bottom: calc(75% * 1.1);
+      }
+      .b3 .w3,
+      .b3 .w5 {
+        left: 1.5em;
+      }
+      .b3 .w4,
+      .b3 .w6 {
+        left: 3.5em;
+      }
+      .b3 .w3,
+      .b3 .w4 {
+        bottom: 47%;
+      }
+      .b3 .w5,
+      .b3 .w6 {
+        bottom: 19%;
+      }
+
+      /* Building 4 */
+      .b4 {
+        width: 4em;
+        height: 8em;
+        left: -10em;
+        bottom: 0;
+        transform: translate(-50%, 0) rotate(-10deg);
+      }
+      .b4 .roof {
+        bottom: calc(8em - 0.05em);
+        width: 4em;
+        height: 4em;
+      }
+      .b4 .w1-2,
+      .b4 .w3-4 {
+        width: 1.2em;
+        height: 1.8em;
+        left: 50%;
+      }
+      .b4 .w1-2 {
+        bottom: calc(75% * 0.9);
+      }
+      .b4 .w3-4 {
+        bottom: calc(47% * 0.7);
+      }
+
+      /* Building 5 */
+      .b5 {
+        width: 4em;
+        height: 8em;
+        left: 10em;
+        bottom: 0;
+        transform: translate(-50%, 0) rotate(10deg);
+      }
+      .b5 .roof {
+        bottom: calc(8em - 0.05em);
+        width: 4em;
+        height: 4em;
+      }
+      .b5 .w1,
+      .b5 .w2,
+      .b5 .w3,
+      .b5 .w4 {
+        width: 0.8em;
+        height: 1.2em;
+      }
+      .b5 .w1,
+      .b5 .w3 {
+        left: 1.2em;
+      }
+      .b5 .w2,
+      .b5 .w4 {
+        left: 2.8em;
+      }
+      .b5 .w1,
+      .b5 .w2 {
+        bottom: 75%;
+      }
+      .b5 .w3,
+      .b5 .w4 {
+        bottom: 47%;
+      }
+
+      /* ===================================== */
+
+      .maze-container {
+        width: 100%;
+        max-width: 800px;
+        padding: 20px;
+        position: relative;
+        z-index: 10; /* Ensures the maze is completely above the scenery and canvas */
+      }
+
+      svg#maze-svg {
+        width: 100%;
+        height: auto;
+        background-color: #eaddc5;
+        border-radius: 12px;
+        box-shadow:
+          0 8px 32px rgba(0, 0, 0, 0.5),
+          inset 0 0 40px rgba(139, 69, 19, 0.2);
+        border: 4px solid #3c2a1a;
+      }
+
+      /* Background Blur Effect */
+      #maze-content {
+        transition:
+          filter 1s ease-in-out,
+          opacity 1s ease-in-out;
+      }
+
+      #maze-content.blurred {
+        filter: blur(5px);
+        opacity: 0.5;
+      }
+
+      /* Owl Visibility & Positioning */
+      .owl-positioner {
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 1s ease-in-out;
+      }
+      .owl-positioner.visible {
+        opacity: 1;
+        pointer-events: auto;
+      }
+
+      .owl {
+        animation: floaty 1.75s infinite;
+      }
+
+      /* Magical Letter Hover Effect */
+      .letter-clicker {
+        cursor: pointer;
+        transition: filter 0.3s ease;
+      }
+      .letter-clicker:hover {
+        filter: drop-shadow(0px 0px 8px #e5b13a);
+      }
+
+      /* SVG Animations */
+      .Eye1,
+      .Eye2 {
+        animation: blink 5s infinite;
+        transform-origin: 0px;
+        transform-box: fill-box;
+      }
+      .Wing_Left {
+        animation: shake-left-wing 500ms infinite;
+        transform-origin: 37% 0%;
+        transform-box: fill-box;
+      }
+      .Wing_Right {
+        animation: shake-right-wing 500ms infinite;
+        transform-origin: 57% 0%;
+        transform-box: fill-box;
+      }
+      .Left_Leg {
+        animation: shake-left-leg 1.5s infinite;
+        transform-origin: 66% 0%;
+        transform-box: fill-box;
+      }
+      .Right_Leg {
+        animation: shake-right-leg 2s infinite;
+        transform-origin: 32% 2%;
+        transform-box: fill-box;
+      }
+
+      /* Owl Colors */
+      .st0 {
+        display: none;
+      }
+      .st1 {
+        fill: #482d2c;
+        stroke: #6b5f5e;
+        stroke-miterlimit: 10;
+      }
+      .st2 {
+        fill: #b8afc2;
+      }
+      .st3 {
+        fill: #ffffff;
+      }
+      .st4 {
+        fill: #482d2c;
+      }
+      .st5 {
+        fill: #b8afc2;
+      }
+      .st6 {
+        display: none;
+        fill: #8e8597;
+      }
+      .st7 {
+        fill: #ffffff;
+      }
+      .st8 {
+        stroke: #000000;
+        stroke-miterlimit: 10;
+      }
+      .st9 {
+        fill: #ffffff;
+        stroke: #000000;
+        stroke-miterlimit: 10;
+      }
+      .st10 {
+        fill: #482d2c;
+      }
+
+      @keyframes blink {
+        40% {
+          transform: scaleY(1);
+        }
+        45% {
+          transform: scaleY(0.1);
+        }
+        50% {
+          transform: scaleY(1);
+        }
+      }
+      @keyframes shake-left-wing {
+        0% {
+          transform: rotate(0deg);
+        }
+        50% {
+          transform: rotate(130deg);
+        }
+        100% {
+          transform: rotate(0deg);
+        }
+      }
+      @keyframes shake-right-wing {
+        0% {
+          transform: rotate(0deg);
+        }
+        50% {
+          transform: rotate(-130deg);
+        }
+        100% {
+          transform: rotate(0deg);
+        }
+      }
+      @keyframes shake-left-leg {
+        0% {
+          transform: rotate(0deg);
+        }
+        50% {
+          transform: rotate(30deg);
+        }
+        100% {
+          transform: rotate(0deg);
+        }
+      }
+      @keyframes shake-right-leg {
+        0% {
+          transform: rotate(0deg);
+        }
+        50% {
+          transform: rotate(-30deg);
+        }
+        100% {
+          transform: rotate(0deg);
+        }
+      }
+      @keyframes floaty {
+        0% {
+          transform: translateY(15px);
+        }
+        50% {
+          transform: translateY(0px);
+        }
+        100% {
+          transform: translateY(15px);
+        }
+      }
+
+      @keyframes float {
+        0% {
+          transform: translateY(0px) scale(1);
+          opacity: 0.85;
+        }
+        50% {
+          transform: translateY(-12px) scale(1.05);
+          opacity: 0.6;
+        }
+        100% {
+          transform: translateY(0px) scale(1);
+          opacity: 0.85;
+        }
+      }
+
+      .smoke-puff {
+        animation: float 4s ease-in-out infinite;
+        transform-origin: center;
+      }
+      .smoke-puff:nth-child(2) {
+        animation-delay: -1.5s;
+      }
+      .smoke-puff:nth-child(3) {
+        animation-delay: -3s;
+      }
+
+      @keyframes spin {
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      #wheel-back {
+        transform-origin: 150px 295px;
+      }
+      #wheel-mid {
+        transform-origin: 260px 310px;
+      }
+      #wheel-front {
+        transform-origin: 340px 310px;
+      }
+
+      .track-clicker {
+        cursor: pointer;
+        outline: none;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      #moving-train {
+        offset-rotate: auto;
+        opacity: 0;
+        transition: opacity 0.3s;
+      }
+
+      /* TRAIN FALLING APART ANIMATIONS */
+      @keyframes break-body {
+        100% {
+          transform: translateY(150px) rotate(35deg);
+          opacity: 0;
+        }
+      }
+      @keyframes break-wheel-back {
+        100% {
+          transform: translate(-150px, 150px) rotate(-360deg);
+          opacity: 0;
+        }
+      }
+      @keyframes break-wheel-mid {
+        100% {
+          transform: translate(50px, 200px) rotate(180deg);
+          opacity: 0;
+        }
+      }
+      @keyframes break-wheel-front {
+        100% {
+          transform: translate(200px, 100px) rotate(360deg);
+          opacity: 0;
+        }
+      }
+      @keyframes scatter-smoke {
+        100% {
+          transform: translate(-150px, -200px) scale(2);
+          opacity: 0;
+        }
+      }
+
+      .falling-apart #train-body {
+        animation: break-body 1.2s forwards
+          cubic-bezier(0.55, 0.085, 0.68, 0.53);
+      }
+      .falling-apart #wheel-back {
+        animation: break-wheel-back 1.1s forwards
+          cubic-bezier(0.55, 0.085, 0.68, 0.53);
+      }
+      .falling-apart #wheel-mid {
+        animation: break-wheel-mid 1.2s forwards
+          cubic-bezier(0.55, 0.085, 0.68, 0.53);
+      }
+      .falling-apart #wheel-front {
+        animation: break-wheel-front 1s forwards
+          cubic-bezier(0.55, 0.085, 0.68, 0.53);
+      }
+      .falling-apart #smoke {
+        animation: scatter-smoke 1s forwards ease-out;
+      }
+
+      /* Error/Crash Overlay */
+      #message-overlay {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(255, 255, 255, 0.95);
+        padding: 2rem 3rem;
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        text-align: center;
+        opacity: 1;
+        transition: opacity 0.3s ease;
+        pointer-events: auto;
+        z-index: 10;
+        border: 2px solid #3c2a1a;
+        cursor: pointer;
+      }
+      #message-overlay.hidden {
+        opacity: 0;
+        pointer-events: none;
+      }
+      #message-overlay h2 {
+        margin: 0 0 0.5rem 0;
+        font-size: 1.6rem;
+        color: #1a1a1a;
+      }
+
+      /* Magical Opened Letter Overlay */
+      #letter-overlay {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) scale(0.6) rotate(-5deg);
+        background: #f4e8c1;
+        background-image: radial-gradient(#f4e8c1 40%, #e8d5a5 100%);
+        padding: 3rem 4rem;
+        border-radius: 4px;
+        box-shadow:
+          0 20px 50px rgba(0, 0, 0, 0.5),
+          inset 0 0 25px rgba(166, 138, 86, 0.5);
+        opacity: 0;
+        pointer-events: none;
+        transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        z-index: 20;
+        border: 2px solid #d4b872;
+        max-width: 80%;
+      }
+      #letter-overlay.open {
+        opacity: 1;
+        pointer-events: auto;
+        transform: translate(-50%, -50%) scale(1) rotate(0deg);
+      }
+
+      .letter-content {
+        position: relative;
+      }
+      .letter-logo {
+        position: absolute;
+        top: -20px;
+        right: -20px;
+        width: 90px;
+        height: auto;
+        opacity: 0.9;
+        filter: drop-shadow(0px 4px 6px rgba(0, 0, 0, 0.2));
+      }
+
+      .hp-font {
+        font-family: "Macondo", cursive, serif;
+        color: #2b5329;
+        margin: 0;
+        letter-spacing: 1px;
+      }
+      .letter-greeting {
+        font-size: 2.5rem;
+        margin-bottom: 1.5rem;
+        text-align: left;
+        margin-right: 60px;
+      }
+      .letter-body {
+        font-size: 1.6rem;
+        line-height: 1.5;
+        text-align: justify;
+        margin-bottom: 1.5rem;
+      }
+      .letter-signoff {
+        font-size: 1.8rem;
+        text-align: right;
+        margin-top: 2rem;
+        margin-bottom: 2rem;
+        line-height: 1.3;
+      }
+
+      #close-letter-btn {
+        padding: 12px 28px;
+        background: #9e2a3b;
+        color: #f4e8c1;
+        border: 2px solid #7a1a29;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: bold;
+        font-size: 1.1rem;
+        transition: background 0.2s;
+        font-family: sans-serif;
+        display: block;
+        margin: 0 auto;
+      }
+      #close-letter-btn:hover {
+        background: #7a1a29;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- FIXED BACKGROUND SCENE -->
+    <div class="scenery">
+      <!-- Your Custom Dragon Canvas -->
+      <canvas id="c"></canvas>
+
+      <div class="moon"></div>
+      <div class="star-layer one"></div>
+      <div class="star-layer two"></div>
+      <div class="star-layer three"></div>
+
+      <!-- Your Custom CSS Castle implementation -->
+      <div class="castle-container">
+        <!-- Left Castle -->
+        <div class="castle left-castle">
+          <div class="land"></div>
+          <div class="buildings">
+            <div class="b1">
+              <div class="roof"></div>
+              <div class="door"></div>
+              <div class="w1"></div>
+              <div class="w2"></div>
+              <div class="w3"></div>
+              <div class="w4"></div>
+              <div class="w5"></div>
+              <div class="w6"></div>
+            </div>
+            <div class="b2">
+              <div class="roof"></div>
+              <div class="w1"></div>
+              <div class="w2"></div>
+              <div class="w3"></div>
+              <div class="w4"></div>
+              <div class="w5"></div>
+              <div class="w6"></div>
+            </div>
+            <div class="b3">
+              <div class="roof"></div>
+              <div class="w1-2-c"></div>
+              <div class="w3"></div>
+              <div class="w4"></div>
+              <div class="w5"></div>
+              <div class="w6"></div>
+            </div>
+            <div class="b4">
+              <div class="roof"></div>
+              <div class="w1-2"></div>
+              <div class="w3-4"></div>
+            </div>
+            <div class="b5">
+              <div class="roof"></div>
+              <div class="w1"></div>
+              <div class="w2"></div>
+              <div class="w3"></div>
+              <div class="w4"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Castle (Mirrored) -->
+        <div class="castle right-castle">
+          <div class="land"></div>
+          <div class="buildings">
+            <div class="b1">
+              <div class="roof"></div>
+              <div class="door"></div>
+              <div class="w1"></div>
+              <div class="w2"></div>
+              <div class="w3"></div>
+              <div class="w4"></div>
+              <div class="w5"></div>
+              <div class="w6"></div>
+            </div>
+            <div class="b2">
+              <div class="roof"></div>
+              <div class="w1"></div>
+              <div class="w2"></div>
+              <div class="w3"></div>
+              <div class="w4"></div>
+              <div class="w5"></div>
+              <div class="w6"></div>
+            </div>
+            <div class="b3">
+              <div class="roof"></div>
+              <div class="w1-2-c"></div>
+              <div class="w3"></div>
+              <div class="w4"></div>
+              <div class="w5"></div>
+              <div class="w6"></div>
+            </div>
+            <div class="b4">
+              <div class="roof"></div>
+              <div class="w1-2"></div>
+              <div class="w3-4"></div>
+            </div>
+            <div class="b5">
+              <div class="roof"></div>
+              <div class="w1"></div>
+              <div class="w2"></div>
+              <div class="w3"></div>
+              <div class="w4"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAZE CONTAINER -->
+    <div class="maze-container">
+      <!-- Crash Message Overlay (Click anywhere) -->
+      <div id="message-overlay" class="hidden">
+        <h2 id="message-title">Wrong House! Try Again.</h2>
+        <p style="font-size: 1.1rem; color: #4a4a4a; margin: 10px 0 0 0">
+          (Click anywhere to play again)
+        </p>
+      </div>
+
+      <!-- Magical Opened Letter Overlay -->
+      <div id="letter-overlay" class="hidden">
+        <div class="letter-content">
+          <img src="hogward_logo.png" alt="Hogwarts Logo" class="letter-logo" />
+
+          <h1 class="hp-font letter-greeting">Dear Khalid,</h1>
+          <p class="hp-font letter-body">
+            You have been accepted into Gryffindor House at Hogwarts. Your
+            courage and bravery set you apart.
+            <br /><br />
+            Term begins September 1st.
+          </p>
+          <p class="hp-font letter-signoff">
+            Yours sincerely,<br />
+            <strong>Prof. McGonagall</strong>
+          </p>
+          <button id="close-letter-btn">Play Again</button>
+        </div>
+      </div>
+
+      <svg
+        id="maze-svg"
+        viewBox="0 0 600 600"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <defs>
+          <path
+            id="path1"
+            d="M 100 50 C 100 200, 500 100, 450 300 S 50 400, 150 450 S 220 400, 220 550"
+          />
+          <path
+            id="path2"
+            d="M 220 50 C 220 250, 50 200, 100 350 S 450 250, 500 400 S 460 450, 460 550"
+          />
+          <path
+            id="path3"
+            d="M 340 50 C 340 150, 550 200, 400 350 S 150 200, 100 300 S 100 450, 100 550"
+          />
+          <path
+            id="path4"
+            d="M 460 50 C 460 200, 150 150, 250 300 S 550 400, 400 450 S 340 450, 340 550"
+          />
+        </defs>
+
+        <g id="maze-content">
+          <g transform="rotate(-90 300 300)">
+            <use href="#path1" stroke="#333333" stroke-width="16" fill="none" />
+            <use href="#path1" stroke="#eaddc5" stroke-width="10" fill="none" />
+            <use
+              href="#path1"
+              stroke="#8B4513"
+              stroke-width="26"
+              stroke-dasharray="6 16"
+              fill="none"
+            />
+
+            <use href="#path2" stroke="#333333" stroke-width="16" fill="none" />
+            <use href="#path2" stroke="#eaddc5" stroke-width="10" fill="none" />
+            <use
+              href="#path2"
+              stroke="#8B4513"
+              stroke-width="26"
+              stroke-dasharray="6 16"
+              fill="none"
+            />
+
+            <use href="#path3" stroke="#333333" stroke-width="16" fill="none" />
+            <use href="#path3" stroke="#eaddc5" stroke-width="10" fill="none" />
+            <use
+              href="#path3"
+              stroke="#8B4513"
+              stroke-width="26"
+              stroke-dasharray="6 16"
+              fill="none"
+            />
+
+            <use href="#path4" stroke="#333333" stroke-width="16" fill="none" />
+            <use href="#path4" stroke="#eaddc5" stroke-width="10" fill="none" />
+            <use
+              href="#path4"
+              stroke="#8B4513"
+              stroke-width="26"
+              stroke-dasharray="6 16"
+              fill="none"
+            />
+
+            <image
+              href="https://contentful.harrypotter.com/usf1vwtuqyxm/17xo05yCVo3tetTYhsgAvG/8963643ef613a74abc40a72548ddb953/Filled-Ravenclaw.svg"
+              x="70"
+              y="520"
+              width="60"
+              height="60"
+              transform="rotate(90, 100, 550)"
+            />
+            <image
+              href="https://contentful.harrypotter.com/usf1vwtuqyxm/1Et1EKQhLsGiql1ZlbHShw/79b58fe13d156833a808c82b085bedfe/Filled-Hufflepuff.svg"
+              x="190"
+              y="520"
+              width="60"
+              height="60"
+              transform="rotate(90, 220, 550)"
+            />
+            <image
+              href="https://contentful.harrypotter.com/usf1vwtuqyxm/1dUgeiYSumqjTF6m8BWP1u/aa4d596be495975136ce08fe14a63e7b/Filled-Slytherin.svg"
+              x="310"
+              y="520"
+              width="60"
+              height="60"
+              transform="rotate(90, 340, 550)"
+            />
+            <image
+              href="https://contentful.harrypotter.com/usf1vwtuqyxm/4PcgKT3VHNAUTvf7kXkdrD/2093bb06b6a9e6e74129f13c0c639932/Filled-Gryffindor.svg"
+              x="430"
+              y="520"
+              width="60"
+              height="60"
+              transform="rotate(90, 460, 550)"
+            />
+
+            <use
+              class="track-clicker"
+              href="#path1"
+              stroke="transparent"
+              stroke-width="40"
+              fill="none"
+              data-target="#path1"
+            />
+            <use
+              class="track-clicker"
+              href="#path2"
+              stroke="transparent"
+              stroke-width="40"
+              fill="none"
+              data-target="#path2"
+            />
+            <use
+              class="track-clicker"
+              href="#path3"
+              stroke="transparent"
+              stroke-width="40"
+              fill="none"
+              data-target="#path3"
+            />
+            <use
+              class="track-clicker"
+              href="#path4"
+              stroke="transparent"
+              stroke-width="40"
+              fill="none"
+              data-target="#path4"
+            />
+
+            <g id="moving-train">
+              <g
+                id="train-visuals"
+                transform="scale(0.18) translate(-250, -300)"
+              >
+                <g id="smoke" fill="#e2e8f0">
+                  <path
+                    class="smoke-puff"
+                    d="M 380,50 Q 350,30 385,15 Q 410,-10 445,10 Q 480,0 490,30 Q 515,60 480,85 Q 490,110 450,110 Q 410,120 390,95 Q 350,105 355,70 Z"
+                  />
+                  <path
+                    class="smoke-puff"
+                    d="M 330,100 Q 310,70 345,65 Q 370,40 405,60 Q 440,50 435,90 Q 455,115 420,125 Q 390,140 360,120 Q 330,135 320,110 Z"
+                  />
+                  <path
+                    class="smoke-puff"
+                    d="M 310,150 Q 300,130 325,125 Q 340,110 360,125 Q 380,120 375,145 Q 390,160 365,165 Q 340,175 325,160 Q 305,170 310,150 Z"
+                  />
+                </g>
+
+                <g id="train-body">
+                  <path
+                    d="M 70 280 L 420 280 L 420 300 L 70 300 Z"
+                    fill="#2c2c2c"
+                  />
+                  <path
+                    d="M 70 275 L 420 275"
+                    stroke="#e5b13a"
+                    stroke-width="3"
+                  />
+                  <image
+                    href="boy_sitting.png"
+                    x="80"
+                    y="155"
+                    width="100"
+                    height="120"
+                  />
+                  <path
+                    d="M 80 140 L 180 140 L 180 280 L 80 280 Z M 100 155 L 100 225 L 160 225 L 160 155 Z"
+                    fill="#7a1a29"
+                    fill-rule="evenodd"
+                  />
+                  <path
+                    d="M 70 145 C 70 110, 190 110, 190 145 Z"
+                    fill="#1a1a1a"
+                  />
+
+                  <path
+                    d="M 180 170 L 360 170 C 400 170, 400 280, 360 280 L 180 280 Z"
+                    fill="#7a1a29"
+                  />
+                  <path
+                    d="M 180 180 L 350 180 C 370 180, 370 210, 350 210 L 180 210 Z"
+                    fill="#9e2a3b"
+                    opacity="0.6"
+                  />
+                  <path
+                    d="M 230 170 L 230 280"
+                    stroke="#e5b13a"
+                    stroke-width="4"
+                  />
+                  <path
+                    d="M 290 170 L 290 280"
+                    stroke="#e5b13a"
+                    stroke-width="4"
+                  />
+                  <path
+                    d="M 80 250 L 375 250"
+                    stroke="#e5b13a"
+                    stroke-width="4"
+                  />
+                  <path
+                    d="M 315 170 L 315 110 L 300 90 L 350 90 L 335 110 L 335 170 Z"
+                    fill="#1a1a1a"
+                  />
+                  <path
+                    d="M 295 90 L 355 90 L 355 98 L 295 98 Z"
+                    fill="#e5b13a"
+                  />
+                  <path
+                    d="M 245 170 C 245 135, 275 135, 275 170 Z"
+                    fill="#e5b13a"
+                    stroke="#c08f22"
+                    stroke-width="2"
+                  />
+                  <path d="M 390 300 L 440 330 L 380 330 Z" fill="#1a1a1a" />
+                  <path
+                    d="M 390 305 L 430 325 M 385 315 L 415 330"
+                    stroke="#333"
+                    stroke-width="3"
+                  />
+                  <circle
+                    cx="390"
+                    cy="225"
+                    r="14"
+                    fill="#ffffff"
+                    stroke="#e5b13a"
+                    stroke-width="4"
+                  />
+                  <path
+                    d="M 420 285 L 435 285 L 435 295 L 420 295 Z"
+                    fill="#7a1a29"
+                  />
+                  <circle
+                    cx="440"
+                    cy="290"
+                    r="8"
+                    fill="#a0a0a0"
+                    stroke="#2c2c2c"
+                    stroke-width="2"
+                  />
+                  <path
+                    d="M 150 310 L 350 310"
+                    stroke="#b0b0b0"
+                    stroke-width="10"
+                    stroke-linecap="round"
+                  />
+                  <path
+                    d="M 150 310 L 350 310"
+                    stroke="#ffffff"
+                    stroke-width="4"
+                    stroke-linecap="round"
+                    opacity="0.6"
+                  />
+                  <path
+                    d="M 350 295 L 390 295 L 390 325 L 350 325 Z"
+                    fill="#4a4a4a"
+                    stroke="#2c2c2c"
+                    stroke-width="2"
+                  />
+                </g>
+
+                <g id="wheel-back" class="wheel">
+                  <circle
+                    cx="150"
+                    cy="295"
+                    r="42"
+                    fill="#1a1a1a"
+                    stroke="#dcdcdc"
+                    stroke-width="6"
+                  />
+                  <path
+                    d="M 150 255 L 150 335 M 110 295 L 190 295 M 122 267 L 178 323 M 122 323 L 178 267"
+                    stroke="#dcdcdc"
+                    stroke-width="4"
+                  />
+                  <circle cx="150" cy="295" r="8" fill="#e5b13a" />
+                </g>
+                <g id="wheel-mid" class="wheel">
+                  <circle
+                    cx="260"
+                    cy="310"
+                    r="28"
+                    fill="#1a1a1a"
+                    stroke="#dcdcdc"
+                    stroke-width="5"
+                  />
+                  <path
+                    d="M 260 282 L 260 338 M 232 310 L 288 310 M 240 290 L 280 330 M 240 330 L 280 290"
+                    stroke="#dcdcdc"
+                    stroke-width="3"
+                  />
+                  <circle cx="260" cy="310" r="6" fill="#e5b13a" />
+                </g>
+                <g id="wheel-front" class="wheel">
+                  <circle
+                    cx="340"
+                    cy="310"
+                    r="28"
+                    fill="#1a1a1a"
+                    stroke="#dcdcdc"
+                    stroke-width="5"
+                  />
+                  <path
+                    d="M 340 282 L 340 338 M 312 310 L 368 310 M 320 290 L 360 330 M 320 330 L 360 290"
+                    stroke="#dcdcdc"
+                    stroke-width="3"
+                  />
+                  <circle cx="340" cy="310" r="6" fill="#e5b13a" />
+                </g>
+              </g>
+            </g>
+          </g>
+        </g>
+
+        <!-- Wrapped Owl for positioning in the center of the maze -->
+        <g class="owl-positioner" transform="translate(240, 240)">
+          <g class="owl">
+            <g class="Left_Leg">
+              <path
+                class="st1"
+                d="M47.8,139.4c0,0-4.1,4.7-4.6,10c-0.5,5.3,2.3,10.4,4.6,10.7c2.3,0.2,6.4-3.3,6.2-9.8 C53.8,143.9,47.8,139.4,47.8,139.4z"
+              />
+              <path
+                class="st1"
+                d="M37.9,139.8c0,0-6.2,0.7-10.1,4.3c-3.9,3.6-5.4,9.2-3.9,11c1.5,1.7,6.9,1.9,11.2-3 C39.3,147.2,37.9,139.8,37.9,139.8z"
+              />
+              <path
+                class="st1"
+                d="M43.6,137.5c0,0-8.7,4-11.8,9.7c-3.2,5.7-3.7,12.7-1,14.3s11-4.5,13.7-9.7C47.1,146.7,43.6,137.5,43.6,137.5z"
+              />
+            </g>
+            <g class="Right_Leg">
+              <path
+                class="st1"
+                d="M79.5,139.4c0,0,4.1,4.7,4.6,10c0.5,5.3-2.3,10.4-4.6,10.7c-2.3,0.2-6.4-3.3-6.2-9.8 C73.5,143.9,79.5,139.4,79.5,139.4z"
+              />
+              <path
+                class="st1"
+                d="M89.4,139.8c0,0,6.2,0.7,10.1,4.3c3.9,3.6,5.4,9.2,3.9,11c-1.5,1.7-6.9,1.9-11.2-3 C87.9,147.2,89.4,139.8,89.4,139.8z"
+              />
+              <path
+                class="st1"
+                d="M83.6,137.5c0,0,8.7,4,11.8,9.7c3.2,5.7,3.7,12.7,1,14.3c-2.7,1.7-11-4.5-13.7-9.7 C80.1,146.7,83.6,137.5,83.6,137.5z"
+              />
+            </g>
+            <g class="Body">
+              <path
+                class="st2"
+                d="M28.1,9.8C29,9,39.8,0,66.3,0s35.5,9.8,35.5,9.8S117.1-0.7,123.6,3c4.2,8.3-4.8,45.3-4.8,45.3l3.8,32 c0,0,8.2,62.7-57.2,64C-0.1,145.7,6.1,82,6.1,82l4.3-36.2c0,0-7.2-38.5-2.3-41.5S28.1,9.8,28.1,9.8z"
+              />
+            </g>
+            <g class="Belly">
+              <path
+                class="st3"
+                d="M18,125.5c0,0,7.6-36.2,46.1-38s46.3,38.5,46.3,38.5s-10.8,16.7-45,19S18,125.5,18,125.5z"
+              />
+            </g>
+            <g class="belly_waves">
+              <path
+                class="st4"
+                d="M34.1,101.6c2.5,2.4,6.3,6.6,10.1,6.7c3.7,0.1,7.2-4.1,9.3-6.7c-0.7,0-1.4,0-2.1,0c3,2.9,7.2,6.4,11.5,6.6 c4.6,0.3,8.5-3.5,11.1-6.9c-0.9,0-1.7,0-2.6,0c5.6,8.4,18.1,9.5,23.3,0c0.9-1.7-1.7-3.2-2.6-1.5c-4,7.4-13.8,6.6-18.2,0 c-0.7-1-1.9-0.9-2.6,0c-2.5,3.3-6.2,6.5-10.6,4.8c-2.8-1.1-5.2-3.1-7.3-5.1c-0.5-0.5-1.6-0.6-2.1,0c-1.6,1.9-4.7,6.1-7.5,5.7 c-2.7-0.4-5.7-3.9-7.6-5.7C34.8,98.2,32.7,100.3,34.1,101.6L34.1,101.6z"
+              />
+              <path
+                class="st4"
+                d="M45.8,122.3c1.7,3.5,4.9,8.5,9.3,8.5c4.4,0,7.8-5,9.5-8.5c-0.9-0.1-1.8-0.2-2.7-0.4 c1.7,4.2,5.2,8.8,10.2,8.9c4.9,0,8.1-4.6,9.4-8.9c0.6-1.8-2.3-2.6-2.9-0.8c-0.9,2.9-3.1,6.6-6.6,6.6c-3.5,0-6.1-3.8-7.3-6.6 c-0.4-1.1-2.1-1.6-2.7-0.4c-1.2,2.5-3.8,7-7,7c-3.1,0-5.5-4.5-6.7-7C47.6,119.1,45,120.6,45.8,122.3L45.8,122.3z"
+              />
+            </g>
+            <g class="Wing_Left">
+              <path
+                class="st2"
+                d="M37.4,93.6c0,0,25.5,23.8,21.3,32.8c-3.2,0.9-6.3,1.5-9.2,1.9C30,130.6,18.3,122,12.1,115 c-4-4.5-5.7-8.4-5.7-8.4s-4.5-18.3,5.3-23.8S37.4,93.6,37.4,93.6z"
+              />
+              <path
+                class="st4"
+                d="M36.3,94.6c4.8,4.5,9.4,9.4,13.5,14.6c2.8,3.6,6,7.7,7.3,12.2c0.2,0.7,0.6,1.8,0.5,2.6 c-0.4,1.6-0.3,1-1.8,1.4c-4.2,1.3-9,1.7-13.3,1.6c-13.5-0.1-26-6.8-33.2-18.3C5.9,103.3,5.2,92,9.8,86.4 C17,77.5,30.7,89,36.3,94.6c1.4,1.4,3.5-0.7,2.1-2.1c-6-6.1-16.7-14.9-25.9-11.7c-9.4,3.3-10.3,17.7-7.7,25.8 C8.5,118,22,126.7,33,129.1c4.2,0.9,8.6,1.2,12.9,1c3.4-0.2,10.4-0.2,13.1-2.3c3-2.2,1.2-7.3-0.2-10.1 c-4.5-9.6-12.8-18-20.4-25.1C37,91.2,34.9,93.3,36.3,94.6z"
+              />
+              <path class="st2" d="M14.4,97.2c-3.4,5-2.3,17.7-2.3,17.7" />
+              <path
+                class="st4"
+                d="M13.1,96.5c-3.2,5.2-3,12.6-2.5,18.5c0.2,1.9,3.2,1.9,3,0c-0.4-5.4-0.8-12.3,2.1-17 C16.7,96.3,14.1,94.8,13.1,96.5L13.1,96.5z"
+              />
+              <path class="st2" d="M21.6,106.1c-3.3,5.4-0.6,16.5-0.6,16.5" />
+              <path
+                class="st4"
+                d="M20.3,105.3c-2.8,5.2-2.1,12.1-0.8,17.7c0.4,1.9,3.3,1.1,2.9-0.8c-1.1-4.7-1.9-10.9,0.5-15.4 C23.8,105.1,21.3,103.6,20.3,105.3L20.3,105.3z"
+              />
+              <path class="st2" d="M30.1,112c-3.5,5.3-0.7,14.6-0.7,14.6" />
+              <path
+                class="st4"
+                d="M28.8,111.2c-2.8,4.6-2.3,10.7-0.9,15.7c0.5,1.9,3.4,1.1,2.9-0.8c-1.2-4.2-1.8-9.5,0.6-13.4 C32.4,111.1,29.8,109.5,28.8,111.2L28.8,111.2z"
+              />
+              <path class="st2" d="M47.5,121c-1.5,2.6,0.8,7.4,0.8,7.4" />
+              <path
+                class="st4"
+                d="M46.2,120.2c-1.4,2.8-0.5,6.2,0.8,8.9c0.8,1.7,3.4,0.2,2.6-1.5c-0.7-1.5-1.6-4.2-0.8-5.9 C49.7,120,47.1,118.5,46.2,120.2L46.2,120.2z"
+              />
+              <path class="st2" d="M38,128.4c0,0-2.1-6.3,1-11.8" />
+              <path
+                class="st4"
+                d="M39.4,128c-1.1-3.5-0.8-7.4,0.9-10.6c0.9-1.7-1.7-3.2-2.6-1.5c-2.1,3.9-2.5,8.7-1.2,12.9 C37.1,130.6,40,129.8,39.4,128L39.4,128z"
+              />
+            </g>
+            <g class="Wing_Right">
+              <path
+                class="st2"
+                d="M90.7,93.6c0,0-25.5,23.8-21.3,32.8c3.2,0.9,6.3,1.5,9.2,1.9c19.4,2.4,31.1-6.2,37.4-13.3 c4-4.5,5.7-8.4,5.7-8.4s4.5-18.3-5.3-23.8S90.7,93.6,90.7,93.6z"
+              />
+              <path
+                class="st4"
+                d="M89.7,92.5C82.9,98.9,76.1,106,71.2,114c-1.9,3.1-5,8.4-3.4,12.2c1.2,2.6,4.9,2.5,7.5,3 c4.7,0.8,9.5,1.2,14.2,0.7c13-1.2,28.3-9.6,33.4-22.4c2.9-7.4,2.2-20.2-4.5-25.2C109.2,75.5,96.1,86,89.7,92.5 c-1.4,1.4,0.8,3.5,2.1,2.1c5.1-5.1,14.4-13.2,22.1-11.2c8.4,2.1,8.7,16.5,6.5,22.5c-3.9,10.8-16.9,18.6-27.5,20.5 c-4.1,0.7-8.3,0.8-12.4,0.4c-2.2-0.2-4.4-0.6-6.6-1c-1.6-0.3-2.8-0.1-3.3-1.4c-1.2-3.2,3.2-9,4.9-11.4 c4.7-6.7,10.4-12.9,16.4-18.4C93.2,93.3,91.1,91.2,89.7,92.5z"
+              />
+              <path class="st2" d="M113.7,97.2c3.4,5,2.3,17.7,2.3,17.7" />
+              <path
+                class="st4"
+                d="M112.5,98c2.9,4.7,2.6,11.6,2.1,17c-0.2,1.9,2.8,1.9,3,0c0.5-5.9,0.7-13.3-2.5-18.5 C114,94.8,111.4,96.3,112.5,98L112.5,98z"
+              />
+              <path class="st2" d="M106.5,106.1c3.3,5.4,0.6,16.5,0.6,16.5" />
+              <path
+                class="st4"
+                d="M105.2,106.8c2.4,4.4,1.6,10.6,0.5,15.4c-0.4,1.9,2.5,2.7,2.9,0.8c1.3-5.6,2.1-12.5-0.8-17.7 C106.9,103.6,104.3,105.1,105.2,106.8L105.2,106.8z"
+              />
+              <path class="st2" d="M98,112c3.5,5.3,0.7,14.6,0.7,14.6" />
+              <path
+                class="st4"
+                d="M96.7,112.7c2.3,3.9,1.8,9.2,0.6,13.4c-0.5,1.9,2.4,2.7,2.9,0.8c1.5-5,1.9-11.1-0.9-15.7 C98.3,109.5,95.7,111.1,96.7,112.7L96.7,112.7z"
+              />
+              <path class="st2" d="M80.6,121c1.5,2.6-0.8,7.4-0.8,7.4" />
+              <path
+                class="st4"
+                d="M79.3,121.7c0.9,1.7-0.1,4.3-0.8,5.9c-0.8,1.7,1.8,3.3,2.6,1.5c1.3-2.7,2.2-6.1,0.8-8.9 C81,118.5,78.5,120,79.3,121.7L79.3,121.7z"
+              />
+              <path class="st2" d="M90.1,128.4c0,0,2.1-6.3-1-11.8" />
+              <path
+                class="st4"
+                d="M91.6,128.8c1.4-4.2,0.9-9-1.2-12.9c-0.9-1.7-3.5-0.2-2.6,1.5c1.7,3.2,2,7.2,0.9,10.6 C88.1,129.8,91,130.6,91.6,128.8L91.6,128.8z"
+              />
+            </g>
+            <path
+              class="st5"
+              d="M19.7,27.2c0.5-0.7-6.6-4.2-11.2-2.5c4.9,4.7,3.9,9.7,3.9,9.7S2.3,33.9,1,37.6c6.1,2.2,6.7,7.5,6.7,7.5 S0,49.5,0,52.7c6.5-0.5,7.6,3.6,7.6,3.6s-0.5,5.5-5.8,11.1C4,69.8,11.8,67,11.8,67s-3.5,8.8-1.3,10.3c3.6-4,7.8-3.3,7.8-3.3 s-0.7,10.3,1.5,11.4c2.4-5.1,8.5-6.3,8.5-6.3s1.2,9,4.3,9C35.1,82,41,80,41,80s6.4,6.4,10.2,5c-2.1-4.6,2.7-10.5,2.7-10.5 s5.1,3,8.1,0.6c-1.8-3.5-1-8.2-1-8.2s2.8,0.8,4.6-1.4c-1.5-2.8-1-7.8-1-7.8V44.8c0,0-0.5-6.8,2.6-9.4c-1.6-2-6.6-0.6-6.6-0.6 s1.4-5.5,3.4-8c-1.8-3-10,1-10,1s-0.3-5.1,2.5-9C54.4,16.7,45.4,24,45.4,24s-2.9-7.1-1.8-9.9c-4.4-1.5-9,7.8-9,7.8 s-8.4-1.3-11.5-7.1C19.3,16.3,19.7,27.2,19.7,27.2z"
+            />
+            <g class="eyes">
+              <g class="Eye1">
+                <circle class="st6" cx="36.4" cy="51.1" r="29.3" />
+                <circle class="st7" cx="34.6" cy="48.3" r="20.5" />
+                <circle class="iris" cx="35.1" cy="41.3" r="12" />
+                <circle class="st9" cx="34.6" cy="38.3" r="3.5" />
+              </g>
+              <path
+                class="st5"
+                d="M109.6,27.2c-0.5-0.7,6.6-4.2,11.2-2.5c-4.9,4.7-3.9,9.7-3.9,9.7s10-0.5,11.4,3.2c-6.1,2.2-6.7,7.5-6.7,7.5 s7.7,4.3,7.7,7.6c-6.5-0.5-7.6,3.6-7.6,3.6s0.5,5.5,5.8,11.1c-2.3,2.4-10.1-0.4-10.1-0.4s3.5,8.8,1.3,10.3c-3.6-4-7.8-3.3-7.8-3.3 s0.7,10.3-1.5,11.4c-2.4-5.1-8.5-6.3-8.5-6.3s-1.2,9-4.3,9C94.1,82,88.3,80,88.3,80s-6.4,6.4-10.2,5c2.1-4.6-2.7-10.5-2.7-10.5 s-5.1,3-8.1,0.6c1.8-3.5,1-8.2,1-8.2s-2.8,0.8-4.6-1.4c1.5-2.8,1-7.8,1-7.8V44.8c0,0,0.5-6.8-2.6-9.4c1.6-2,6.6-0.6,6.6-0.6 s-1.4-5.5-3.4-8c1.8-3,10,1,10,1s0.3-5.1-2.5-9c2.3-2.1,11.3,5.1,11.3,5.1s2.9-7.1,1.8-9.9c4.4-1.5,9,7.8,9,7.8s8.4-1.3,11.5-7.1 C110,16.3,109.6,27.2,109.6,27.2z"
+              />
+              <g class="Eye2">
+                <circle class="st5" cx="93.4" cy="51.1" r="29.3" />
+                <circle class="st7" cx="91.6" cy="48.3" r="20.5" />
+                <circle class="iris" cx="92.1" cy="41.3" r="12" />
+                <circle class="st9" cx="91.6" cy="38.3" r="3.5" />
+              </g>
+            </g>
+            <g class="Nose">
+              <ellipse class="st10" cx="63.4" cy="43.3" rx="5.8" ry="15.5" />
+            </g>
+
+            <g transform="translate(35, 70)">
+              <g id="hogwarts-letter" class="letter-clicker">
+                <rect
+                  x="0"
+                  y="0"
+                  width="55"
+                  height="40"
+                  fill="#f4e8c1"
+                  stroke="#a68a56"
+                  stroke-width="1.5"
+                />
+                <path
+                  d="M 0 0 L 27.5 22 L 55 0"
+                  fill="#ebd69f"
+                  stroke="#a68a56"
+                  stroke-width="1.5"
+                />
+                <circle cx="27.5" cy="22" r="7" fill="#9e2a3b" />
+                <circle cx="27.5" cy="22" r="5" fill="#7a1a29" />
+                <text
+                  x="27.5"
+                  y="24.5"
+                  font-size="6"
+                  font-family="serif"
+                  fill="#f4e8c1"
+                  text-anchor="middle"
+                  font-weight="bold"
+                >
+                  H
+                </text>
+              </g>
+            </g>
+          </g>
+        </g>
+      </svg>
+    </div>
+
+    <!-- External Dragon Canvas Script added here -->
+    <script src="dragon.js"></script>
+
+    <script>
+      const mazeContent = document.getElementById("maze-content");
+      const train = document.getElementById("moving-train");
+      const trainVisuals = document.getElementById("train-visuals");
+      const clickers = document.querySelectorAll(".track-clicker");
+      const wheels = document.querySelectorAll(".wheel");
+
+      const messageOverlay = document.getElementById("message-overlay");
+
+      const owlPositioner = document.querySelector(".owl-positioner");
+      const letterOverlay = document.getElementById("letter-overlay");
+      const closeLetterBtn = document.getElementById("close-letter-btn");
+      const hogwartsLetter = document.getElementById("hogwarts-letter");
+
+      let currentAnimation = null;
+
+      // Interaction for closing the generic error message
+      messageOverlay.addEventListener("click", () => {
+        messageOverlay.classList.add("hidden");
+        trainVisuals.classList.remove("falling-apart");
+        train.style.opacity = "0"; // Reset the train visually for a new game
+      });
+
+      // Interaction for opening the magical letter
+      hogwartsLetter.addEventListener("click", () => {
+        letterOverlay.classList.add("open");
+      });
+
+      // Interaction for closing the magical letter
+      closeLetterBtn.addEventListener("click", () => {
+        letterOverlay.classList.remove("open");
+        owlPositioner.classList.remove("visible");
+        mazeContent.classList.remove("blurred");
+        train.style.opacity = "0"; // Reset the train visually for a new game
+      });
+
+      clickers.forEach((clicker) => {
+        clicker.addEventListener("click", function () {
+          // Hide previous messages and reset effects
+          messageOverlay.classList.add("hidden");
+          letterOverlay.classList.remove("open");
+          owlPositioner.classList.remove("visible");
+          mazeContent.classList.remove("blurred");
+          trainVisuals.classList.remove("falling-apart");
+
+          const targetId = this.getAttribute("data-target");
+          const pathElement = document.querySelector(targetId);
+          const pathData = pathElement.getAttribute("d");
+
+          if (currentAnimation) {
+            currentAnimation.cancel();
+          }
+
+          train.style.offsetPath = `path('${pathData}')`;
+          train.style.opacity = "1";
+
+          wheels.forEach((wheel) => {
+            wheel.style.animation = "spin 1.5s linear infinite";
+          });
+
+          currentAnimation = train.animate(
+            [{ offsetDistance: "0%" }, { offsetDistance: "100%" }],
+            {
+              duration: 5000,
+              easing: "linear",
+              fill: "forwards",
+            },
+          );
+
+          currentAnimation.onfinish = () => {
+            // FIX: Clear the inline spin style so the crash CSS animation takes over
+            wheels.forEach((wheel) => {
+              wheel.style.animation = "";
+            });
+
+            // Trigger Win/Loss Conditions
+            if (targetId === "#path2") {
+              // Gryffindor Path Selected - Show the Owl and blur background!
+              owlPositioner.classList.add("visible");
+              mazeContent.classList.add("blurred");
+            } else {
+              // Incorrect Path - Train parts break apart and Show Error Message
+              trainVisuals.classList.add("falling-apart");
+
+              // Delay the overlay slightly so user sees the crash first
+              setTimeout(() => {
+                messageOverlay.classList.remove("hidden");
+              }, 700);
+            }
+          };
+        });
+      });
+    </script>
+  </body>
+</html>
