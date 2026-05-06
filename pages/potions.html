@@ -1,0 +1,489 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Amortentia — Love Potion Brewing</title>
+    <!-- Link to your external stylesheet -->
+    <link rel="stylesheet" href="/css/potions.css" />
+  </head>
+  <body>
+    <div class="scene">
+      <div class="layout">
+        <!-- HEADER -->
+        <header class="header">
+          <h1>✦ Amortentia ✦</h1>
+          <p>The World's Most Powerful Love Potion</p>
+          <div class="divider"><span class="divider-icon">⚗</span></div>
+        </header>
+
+        <!-- LEFT: INGREDIENT SHELF -->
+        <aside class="shelf-area">
+          <span class="shelf-title">Ingredient Shelf</span>
+
+          <div class="shelf">
+            <div class="shelf-label">— Potions Cabinet —</div>
+            <div class="ingredients-grid" id="ingredients-grid">
+              <!-- Correct ingredients -->
+              <div
+                class="ingredient"
+                draggable="true"
+                data-id="water"
+                data-correct="true"
+              >
+                <img
+                  src="https://static.wikia.nocookie.net/harrypotter/images/6/66/Standard_potioning_water_MA.png"
+                  alt="Water"
+                  class="ingredient-img"
+                />
+                <span class="ingredient-name"
+                  >Standard<br />Potioning Water</span
+                >
+              </div>
+              <div
+                class="ingredient"
+                draggable="true"
+                data-id="eggs"
+                data-correct="true"
+              >
+                <img
+                  src="https://eip.gg/wp-content/uploads/2023/04/UI_T_AshwinderEggs.png"
+                  alt="Ashwinder Eggs"
+                  class="ingredient-img"
+                />
+                <span class="ingredient-name">Ashwinder<br />Eggs</span>
+              </div>
+              <div
+                class="ingredient"
+                draggable="true"
+                data-id="thorns"
+                data-correct="true"
+              >
+                <img
+                  src="https://static.wikia.nocookie.net/harrypotter/images/5/5b/RoseThorns.png"
+                  alt="Rose Thorns"
+                  class="ingredient-img"
+                />
+                <span class="ingredient-name">Rose<br />Thorns</span>
+              </div>
+              <div
+                class="ingredient"
+                draggable="true"
+                data-id="peppermint"
+                data-correct="true"
+              >
+                <img
+                  src="https://static.wikia.nocookie.net/harrypotter/images/b/bc/Peppermint.png"
+                  alt="Peppermint"
+                  class="ingredient-img"
+                />
+                <span class="ingredient-name">Peppermint</span>
+              </div>
+              <div
+                class="ingredient"
+                draggable="true"
+                data-id="moonstone"
+                data-correct="true"
+              >
+                <img
+                  src="https://static.wikia.nocookie.net/harrypotter/images/b/b6/Moonstone.png"
+                  alt="Moonstone"
+                  class="ingredient-img"
+                />
+                <span class="ingredient-name">Powdered<br />Moonstone</span>
+              </div>
+              <div
+                class="ingredient"
+                draggable="true"
+                data-id="pearl"
+                data-correct="true"
+              >
+                <img
+                  src="https://static.wikia.nocookie.net/harrypotter/images/8/80/Clam_HL.png"
+                  alt="Pearl Dust"
+                  class="ingredient-img"
+                />
+                <span class="ingredient-name">Pearl<br />Dust</span>
+              </div>
+              <!-- Wrong ingredients (decoys) -->
+              <div
+                class="ingredient wrong"
+                draggable="true"
+                data-id="mucus"
+                data-correct="false"
+              >
+                <span class="ingredient-emoji">🐛</span>
+                <span class="ingredient-name">Flobberworm<br />Mucus</span>
+              </div>
+              <div
+                class="ingredient wrong"
+                draggable="true"
+                data-id="leech"
+                data-correct="false"
+              >
+                <span class="ingredient-emoji">🩸</span>
+                <span class="ingredient-name">Leech<br />Juice</span>
+              </div>
+              <div
+                class="ingredient wrong"
+                draggable="true"
+                data-id="doxy"
+                data-correct="false"
+              >
+                <span class="ingredient-emoji">🦟</span>
+                <span class="ingredient-name">Doxy<br />Eggs</span>
+              </div>
+              <div
+                class="ingredient wrong"
+                draggable="true"
+                data-id="boomslang"
+                data-correct="false"
+              >
+                <span class="ingredient-emoji">🐍</span>
+                <span class="ingredient-name">Boomslang<br />Skin</span>
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        <!-- CENTER: CAULDRON -->
+        <main class="cauldron-area" id="cauldron-area">
+          <!-- Steam canvas (for particle effect) -->
+          <canvas id="steam-canvas" width="340" height="300"></canvas>
+
+          <!-- Drag ghost element -->
+          <div class="drag-ghost" id="drag-ghost"></div>
+
+          <!-- Cauldron SVG -->
+          <div class="cauldron-wrapper" id="cauldron-wrapper">
+            <!-- Drop zone (invisible overlay) -->
+            <div class="drop-zone" id="drop-zone"></div>
+
+            <svg
+              class="cauldron-svg"
+              viewBox="0 0 280 280"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <!-- Shadow under cauldron -->
+              <ellipse
+                cx="140"
+                cy="265"
+                rx="95"
+                ry="10"
+                fill="rgba(0,0,0,0.5)"
+              />
+
+              <!-- Cauldron legs -->
+              <rect
+                x="75"
+                y="230"
+                width="14"
+                height="30"
+                rx="4"
+                fill="#4a3010"
+                stroke="#6a4820"
+                stroke-width="1"
+              />
+              <rect
+                x="191"
+                y="230"
+                width="14"
+                height="30"
+                rx="4"
+                fill="#4a3010"
+                stroke="#6a4820"
+                stroke-width="1"
+              />
+              <rect
+                x="131"
+                y="240"
+                width="14"
+                height="25"
+                rx="4"
+                fill="#3a2508"
+                stroke="#6a4820"
+                stroke-width="1"
+              />
+
+              <!-- Cauldron rim ring -->
+              <ellipse
+                cx="140"
+                cy="110"
+                rx="100"
+                ry="18"
+                fill="#7a5020"
+                stroke="#a07030"
+                stroke-width="2.5"
+              />
+              <ellipse
+                cx="140"
+                cy="108"
+                rx="98"
+                ry="16"
+                fill="#8a6028"
+                stroke="#c09040"
+                stroke-width="1.5"
+              />
+
+              <!-- Cauldron body -->
+              <path
+                d="M 50 120 Q 48 200 140 230 Q 232 200 230 120 Z"
+                fill="url(#cauldronBody)"
+              />
+              <path
+                d="M 50 120 Q 48 200 140 230 Q 232 200 230 120 Z"
+                fill="none"
+                stroke="#6a4820"
+                stroke-width="2"
+              />
+
+              <!-- Highlight on body left -->
+              <path
+                d="M 60 130 Q 58 190 100 215"
+                fill="none"
+                stroke="rgba(200,140,40,0.25)"
+                stroke-width="8"
+                stroke-linecap="round"
+              />
+
+              <!-- LIQUID SURFACE (ellipse inside rim) -->
+              <ellipse
+                cx="140"
+                cy="112"
+                rx="94"
+                ry="14"
+                id="liquid-surface"
+                fill="#0d1a2a"
+              />
+
+              <!-- Animated liquid group (bubbles etc.) -->
+              <g class="liquid-group" id="liquid-group">
+                <!-- Bubbles on surface -->
+                <circle
+                  class="bubble"
+                  cx="118"
+                  cy="110"
+                  r="4"
+                  fill="rgba(255,255,255,0.2)"
+                  id="bubble1"
+                />
+                <circle
+                  class="bubble"
+                  cx="155"
+                  cy="113"
+                  r="3"
+                  fill="rgba(255,255,255,0.15)"
+                  id="bubble2"
+                />
+                <circle
+                  class="bubble"
+                  cx="136"
+                  cy="108"
+                  r="2.5"
+                  fill="rgba(255,255,255,0.18)"
+                  id="bubble3"
+                />
+              </g>
+
+              <!-- Rim highlight -->
+              <ellipse
+                cx="140"
+                cy="107"
+                rx="80"
+                ry="8"
+                fill="none"
+                stroke="rgba(255,220,120,0.2)"
+                stroke-width="4"
+              />
+
+              <!-- Handle left -->
+              <path
+                d="M 52 140 Q 30 130 32 155 Q 34 175 55 168"
+                fill="none"
+                stroke="#8a6028"
+                stroke-width="8"
+                stroke-linecap="round"
+              />
+              <path
+                d="M 52 140 Q 30 130 32 155 Q 34 175 55 168"
+                fill="none"
+                stroke="#c09040"
+                stroke-width="2"
+                stroke-linecap="round"
+              />
+
+              <!-- Handle right -->
+              <path
+                d="M 228 140 Q 250 130 248 155 Q 246 175 225 168"
+                fill="none"
+                stroke="#8a6028"
+                stroke-width="8"
+                stroke-linecap="round"
+              />
+              <path
+                d="M 228 140 Q 250 130 248 155 Q 246 175 225 168"
+                fill="none"
+                stroke="#c09040"
+                stroke-width="2"
+                stroke-linecap="round"
+              />
+
+              <!-- Rivet details -->
+              <circle
+                cx="65"
+                cy="165"
+                r="4"
+                fill="#a07030"
+                stroke="#c09040"
+                stroke-width="1"
+              />
+              <circle
+                cx="215"
+                cy="165"
+                r="4"
+                fill="#a07030"
+                stroke="#c09040"
+                stroke-width="1"
+              />
+              <circle
+                cx="80"
+                cy="205"
+                r="3"
+                fill="#8a6028"
+                stroke="#a07030"
+                stroke-width="1"
+              />
+              <circle
+                cx="200"
+                cy="205"
+                r="3"
+                fill="#8a6028"
+                stroke="#a07030"
+                stroke-width="1"
+              />
+
+              <!-- Gradient definitions -->
+              <defs>
+                <radialGradient id="cauldronBody" cx="35%" cy="30%" r="70%">
+                  <stop offset="0%" stop-color="#9a7030" />
+                  <stop offset="40%" stop-color="#7a5520" />
+                  <stop offset="100%" stop-color="#3a2008" />
+                </radialGradient>
+              </defs>
+            </svg>
+          </div>
+
+          <!-- Status message -->
+          <div class="cauldron-status" id="cauldron-status">
+            Awaiting ingredients…
+          </div>
+
+          <!-- Progress dots -->
+          <div class="progress-dots" id="progress-dots">
+            <div class="dot" id="dot-0"></div>
+            <div class="dot" id="dot-1"></div>
+            <div class="dot" id="dot-2"></div>
+            <div class="dot" id="dot-3"></div>
+            <div class="dot" id="dot-4"></div>
+            <div class="dot" id="dot-5"></div>
+          </div>
+        </main>
+
+        <!-- RIGHT: RECIPE BOOK -->
+        <aside class="book-area">
+          <div class="recipe-book">
+            <div class="book-title">✦ Recipe Codex ✦</div>
+            <div class="book-subtitle">Professor Slughorn's Notes</div>
+            <div class="book-divider"></div>
+            <ul class="recipe-list" id="recipe-list">
+              <li class="recipe-item" data-id="water">
+                <div class="recipe-check" id="check-water"></div>
+                <img
+                  src="https://static.wikia.nocookie.net/harrypotter/images/6/66/Standard_potioning_water_MA.png"
+                  class="recipe-img"
+                  alt="Water"
+                />
+                <span class="recipe-text">Standard Potioning Water</span>
+              </li>
+              <li class="recipe-item" data-id="eggs">
+                <div class="recipe-check" id="check-eggs"></div>
+                <img
+                  src="https://eip.gg/wp-content/uploads/2023/04/UI_T_AshwinderEggs.png"
+                  class="recipe-img"
+                  alt="Eggs"
+                />
+                <span class="recipe-text">Ashwinder Eggs</span>
+              </li>
+              <li class="recipe-item" data-id="thorns">
+                <div class="recipe-check" id="check-thorns"></div>
+                <img
+                  src="https://static.wikia.nocookie.net/harrypotter/images/5/5b/RoseThorns.png"
+                  class="recipe-img"
+                  alt="Thorns"
+                />
+                <span class="recipe-text">Rose Thorns</span>
+              </li>
+              <li class="recipe-item" data-id="peppermint">
+                <div class="recipe-check" id="check-peppermint"></div>
+                <img
+                  src="https://static.wikia.nocookie.net/harrypotter/images/b/bc/Peppermint.png"
+                  class="recipe-img"
+                  alt="Peppermint"
+                />
+                <span class="recipe-text">Peppermint</span>
+              </li>
+              <li class="recipe-item" data-id="moonstone">
+                <div class="recipe-check" id="check-moonstone"></div>
+                <img
+                  src="https://static.wikia.nocookie.net/harrypotter/images/b/b6/Moonstone.png"
+                  class="recipe-img"
+                  alt="Moonstone"
+                />
+                <span class="recipe-text">Powdered Moonstone</span>
+              </li>
+              <li class="recipe-item" data-id="pearl">
+                <div class="recipe-check" id="check-pearl"></div>
+                <img
+                  src="https://static.wikia.nocookie.net/harrypotter/images/8/80/Clam_HL.png"
+                  class="recipe-img"
+                  alt="Pearl"
+                />
+                <span class="recipe-text">Pearl Dust</span>
+              </li>
+            </ul>
+            <div class="book-note">
+              "Identified by its distinctive<br />mother-of-pearl sheen and<br />spiralling
+              steam." <br /><br />
+              <em>— Magical Drafts & Potions</em>
+            </div>
+          </div>
+        </aside>
+
+        <!-- FOOTER -->
+        <footer class="footer">
+          ✦ Drag ingredients from the shelf and drop them into the cauldron ✦
+        </footer>
+      </div>
+      <!-- .layout -->
+    </div>
+    <!-- .scene -->
+
+    <!-- SUCCESS OVERLAY -->
+    <div class="success-overlay" id="success-overlay">
+      <div class="success-bg"></div>
+      <div class="success-card">
+        <span class="success-emoji">💕</span>
+        <h2 class="success-title">Amortentia Brewed Successfully!</h2>
+        <p class="success-desc">
+          The cauldron shimmers with a mother-of-pearl iridescence,<br />
+          and spirals of enchanted steam rise in the air.<br />
+          <em>A most powerful love potion indeed.</em>
+        </p>
+        <button class="success-btn" onclick="resetBrew()">⚗ Brew Again</button>
+      </div>
+    </div>
+
+    <!-- Link to your external JavaScript file -->
+    <script src="/scripts/potions.js"></script>
+  </body>
+</html>

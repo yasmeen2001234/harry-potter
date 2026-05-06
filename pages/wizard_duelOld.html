@@ -1,0 +1,2039 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Wizard Duel – Online</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Cinzel+Decorative:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../css/character.css" />
+
+    <!-- Firebase v9 compat (no bundler needed) -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+
+    <style>
+      :root {
+        --gold: #c9a84c;
+        --gold-light: #f0d060;
+        --dark: #0d0a0f;
+        --hp-red: #c0392b;
+        --hp-red-bright: #e74c3c;
+        --lightning: #ffffaa;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        background: var(--dark);
+        font-family: "Cinzel", serif;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-image:
+          radial-gradient(
+            ellipse at 20% 50%,
+            rgba(106, 61, 184, 0.08) 0%,
+            transparent 60%
+          ),
+          radial-gradient(
+            ellipse at 80% 50%,
+            rgba(139, 26, 26, 0.08) 0%,
+            transparent 60%
+          ),
+          repeating-linear-gradient(
+            0deg,
+            transparent,
+            transparent 40px,
+            rgba(255, 255, 255, 0.01) 40px,
+            rgba(255, 255, 255, 0.01) 41px
+          ),
+          repeating-linear-gradient(
+            90deg,
+            transparent,
+            transparent 40px,
+            rgba(255, 255, 255, 0.01) 40px,
+            rgba(255, 255, 255, 0.01) 41px
+          );
+      }
+
+      /* ══════════════════════════════
+   LOBBY / SETUP SCREEN
+══════════════════════════════ */
+      #lobby-screen {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 28px;
+        padding: 40px;
+        max-width: 520px;
+        width: 95vw;
+      }
+
+      .logo {
+        font-family: "Cinzel Decorative", serif;
+        font-size: clamp(1.4rem, 4vw, 2.2rem);
+        color: var(--gold);
+        letter-spacing: 0.35em;
+        text-shadow: 0 0 30px rgba(201, 168, 76, 0.5);
+        text-align: center;
+      }
+      .logo::before,
+      .logo::after {
+        content: " ✦ ";
+        color: var(--gold-light);
+        font-size: 0.6em;
+      }
+
+      .lobby-card {
+        background: linear-gradient(135deg, #1a1428 0%, #0f0c18 100%);
+        border: 1px solid rgba(201, 168, 76, 0.3);
+        border-radius: 8px;
+        padding: 28px 32px;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        box-shadow:
+          0 8px 40px rgba(0, 0, 0, 0.6),
+          inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      }
+
+      .lobby-card h2 {
+        font-size: 0.7rem;
+        letter-spacing: 0.3em;
+        color: var(--gold);
+        text-transform: uppercase;
+        text-align: center;
+        padding-bottom: 12px;
+        border-bottom: 1px solid rgba(201, 168, 76, 0.15);
+      }
+
+      .gold-btn {
+        font-family: "Cinzel", serif;
+        font-size: 0.75rem;
+        letter-spacing: 0.2em;
+        color: #0d0a0f;
+        background: linear-gradient(135deg, #c9a84c, #f0d060, #c9a84c);
+        border: none;
+        padding: 12px 24px;
+        border-radius: 4px;
+        cursor: pointer;
+        text-transform: uppercase;
+        font-weight: 700;
+        transition:
+          transform 0.15s,
+          box-shadow 0.15s;
+        box-shadow: 0 4px 16px rgba(201, 168, 76, 0.35);
+      }
+      .gold-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 24px rgba(201, 168, 76, 0.55);
+      }
+      .gold-btn:active {
+        transform: translateY(0);
+      }
+      .gold-btn:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .ghost-btn {
+        font-family: "Cinzel", serif;
+        font-size: 0.72rem;
+        letter-spacing: 0.18em;
+        color: var(--gold);
+        background: transparent;
+        border: 1px solid rgba(201, 168, 76, 0.4);
+        padding: 11px 24px;
+        border-radius: 4px;
+        cursor: pointer;
+        text-transform: uppercase;
+        font-weight: 700;
+        transition: all 0.15s;
+      }
+      .ghost-btn:hover {
+        background: rgba(201, 168, 76, 0.08);
+        border-color: var(--gold);
+      }
+
+      .input-field {
+        font-family: "Cinzel", serif;
+        font-size: 0.75rem;
+        letter-spacing: 0.12em;
+        color: rgba(255, 255, 255, 0.85);
+        background: rgba(0, 0, 0, 0.4);
+        border: 1px solid rgba(201, 168, 76, 0.3);
+        border-radius: 4px;
+        padding: 11px 14px;
+        width: 100%;
+        outline: none;
+        transition: border-color 0.2s;
+      }
+      .input-field:focus {
+        border-color: var(--gold);
+      }
+      .input-field::placeholder {
+        color: rgba(255, 255, 255, 0.25);
+        letter-spacing: 0.05em;
+      }
+
+      .divider {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        color: rgba(201, 168, 76, 0.35);
+        font-size: 0.6rem;
+        letter-spacing: 0.3em;
+      }
+      .divider::before,
+      .divider::after {
+        content: "";
+        flex: 1;
+        height: 1px;
+        background: rgba(201, 168, 76, 0.2);
+      }
+
+      .share-box {
+        background: rgba(0, 0, 0, 0.5);
+        border: 1px solid rgba(201, 168, 76, 0.25);
+        border-radius: 4px;
+        padding: 12px 14px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .share-url {
+        flex: 1;
+        font-size: 0.6rem;
+        color: rgba(255, 255, 255, 0.55);
+        letter-spacing: 0.05em;
+        word-break: break-all;
+        line-height: 1.5;
+      }
+      .copy-btn {
+        font-family: "Cinzel", serif;
+        font-size: 0.58rem;
+        letter-spacing: 0.12em;
+        color: var(--gold);
+        background: rgba(201, 168, 76, 0.1);
+        border: 1px solid rgba(201, 168, 76, 0.3);
+        border-radius: 3px;
+        padding: 6px 10px;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: background 0.15s;
+      }
+      .copy-btn:hover {
+        background: rgba(201, 168, 76, 0.2);
+      }
+
+      .status-pill {
+        font-size: 0.58rem;
+        letter-spacing: 0.15em;
+        text-transform: uppercase;
+        padding: 6px 16px;
+        border-radius: 20px;
+        text-align: center;
+      }
+      .status-pill.waiting {
+        background: rgba(106, 61, 184, 0.2);
+        border: 1px solid rgba(106, 61, 184, 0.4);
+        color: #c090ff;
+      }
+      .status-pill.joined {
+        background: rgba(50, 150, 50, 0.2);
+        border: 1px solid rgba(50, 150, 50, 0.4);
+        color: #80ff80;
+      }
+      .status-pill.error {
+        background: rgba(180, 30, 30, 0.2);
+        border: 1px solid rgba(180, 30, 30, 0.4);
+        color: #ff8080;
+      }
+
+      .lobby-note {
+        font-size: 0.56rem;
+        color: rgba(255, 255, 255, 0.3);
+        letter-spacing: 0.1em;
+        text-align: center;
+        line-height: 1.7;
+      }
+
+      /* ══════════════════════════════
+   CONFIG NOTICE
+══════════════════════════════ */
+      #config-notice {
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        gap: 20px;
+        padding: 40px;
+        max-width: 600px;
+        width: 95vw;
+      }
+
+      .config-card {
+        background: linear-gradient(135deg, #1a1428, #0f0c18);
+        border: 1px solid rgba(201, 168, 76, 0.3);
+        border-radius: 8px;
+        padding: 32px;
+        width: 100%;
+        box-shadow: 0 8px 40px rgba(0, 0, 0, 0.6);
+      }
+
+      .config-card h2 {
+        font-family: "Cinzel Decorative", serif;
+        font-size: 1rem;
+        color: var(--gold);
+        margin-bottom: 16px;
+        letter-spacing: 0.2em;
+      }
+
+      .config-card p {
+        font-size: 0.65rem;
+        color: rgba(255, 255, 255, 0.6);
+        letter-spacing: 0.08em;
+        line-height: 1.9;
+        margin-bottom: 12px;
+      }
+
+      .config-card code {
+        display: block;
+        background: rgba(0, 0, 0, 0.6);
+        border: 1px solid rgba(201, 168, 76, 0.2);
+        border-radius: 4px;
+        padding: 14px 16px;
+        font-family: "Courier New", monospace;
+        font-size: 0.62rem;
+        color: #80ff80;
+        line-height: 1.7;
+        margin: 10px 0;
+        white-space: pre-wrap;
+        word-break: break-all;
+      }
+
+      .config-card a {
+        color: var(--gold-light);
+        text-decoration: none;
+      }
+      .config-card a:hover {
+        text-decoration: underline;
+      }
+
+      /* ══════════════════════════════
+   GAME SCREEN
+══════════════════════════════ */
+      #game-screen {
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        gap: 0;
+        width: 1000px;
+        max-width: 98vw;
+        position: relative;
+      }
+
+      .title-banner {
+        font-family: "Cinzel Decorative", serif;
+        font-size: clamp(1.2rem, 2.5vw, 1.8rem);
+        font-weight: 700;
+        color: var(--gold);
+        letter-spacing: 0.4em;
+        text-shadow:
+          0 0 20px rgba(201, 168, 76, 0.5),
+          0 2px 4px rgba(0, 0, 0, 0.8);
+        margin-bottom: 12px;
+      }
+      .title-banner::before,
+      .title-banner::after {
+        content: " ✦ ";
+        color: var(--gold-light);
+        font-size: 0.7em;
+        opacity: 0.7;
+      }
+
+      /* HUD */
+      .hud {
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        padding: 0 8px;
+        margin-bottom: 8px;
+      }
+
+      .player-hud {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        width: 38%;
+      }
+      .player-hud.right {
+        align-items: flex-end;
+      }
+
+      .player-label {
+        font-size: 0.65rem;
+        letter-spacing: 0.2em;
+        color: var(--gold);
+        text-transform: uppercase;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .player-hud.right .player-label {
+        flex-direction: row-reverse;
+      }
+
+      .you-badge {
+        font-size: 0.48rem;
+        background: rgba(106, 61, 184, 0.3);
+        border: 1px solid rgba(106, 61, 184, 0.5);
+        color: #c090ff;
+        padding: 2px 7px;
+        border-radius: 10px;
+        letter-spacing: 0.1em;
+      }
+
+      .hp-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+      }
+      .player-hud.right .hp-row {
+        flex-direction: row-reverse;
+      }
+
+      .heart-icon {
+        font-size: 1.3rem;
+        filter: drop-shadow(0 0 6px rgba(231, 76, 60, 0.8));
+        flex-shrink: 0;
+        animation: heartbeat 1.4s ease-in-out infinite;
+      }
+      @keyframes heartbeat {
+        0%,
+        100% {
+          transform: scale(1);
+        }
+        14% {
+          transform: scale(1.15);
+        }
+        28% {
+          transform: scale(1);
+        }
+        42% {
+          transform: scale(1.08);
+        }
+      }
+
+      .hp-bar-bg {
+        flex: 1;
+        height: 18px;
+        background: rgba(0, 0, 0, 0.6);
+        border: 1px solid var(--gold);
+        border-radius: 3px;
+        overflow: hidden;
+        position: relative;
+        box-shadow:
+          inset 0 1px 3px rgba(0, 0, 0, 0.8),
+          0 0 8px rgba(201, 168, 76, 0.2);
+      }
+      .hp-bar-fill {
+        height: 100%;
+        width: 100%;
+        background: linear-gradient(
+          90deg,
+          var(--hp-red),
+          var(--hp-red-bright) 50%,
+          var(--hp-red)
+        );
+        transition: width 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        position: relative;
+      }
+      .hp-bar-fill::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 40%;
+        background: rgba(255, 255, 255, 0.15);
+      }
+      .hp-bar-bg::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: repeating-linear-gradient(
+          90deg,
+          transparent,
+          transparent calc(10% - 1px),
+          rgba(0, 0, 0, 0.3) calc(10% - 1px),
+          rgba(0, 0, 0, 0.3) 10%
+        );
+        z-index: 2;
+        pointer-events: none;
+      }
+      .hp-text {
+        font-size: 0.62rem;
+        letter-spacing: 0.1em;
+        color: rgba(255, 255, 255, 0.7);
+        min-width: 56px;
+        text-align: center;
+      }
+
+      .vs-badge {
+        font-family: "Cinzel Decorative", serif;
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: var(--gold-light);
+        text-shadow: 0 0 16px rgba(240, 208, 96, 0.6);
+        letter-spacing: 0.1em;
+        padding: 0 12px;
+        flex-shrink: 0;
+      }
+
+      /* ARENA */
+      .arena-frame {
+        width: 100%;
+        position: relative;
+        border: 2px solid var(--gold);
+        border-radius: 6px;
+        background: linear-gradient(
+          180deg,
+          #1a1530 0%,
+          #0e0c18 40%,
+          #161020 100%
+        );
+        box-shadow:
+          0 0 0 1px rgba(201, 168, 76, 0.1),
+          0 0 40px rgba(0, 0, 0, 0.8),
+          inset 0 0 60px rgba(0, 0, 0, 0.5);
+        overflow: hidden;
+        aspect-ratio: 16/7;
+        transition: box-shadow 0.3s ease;
+      }
+      .arena-frame.p1-turn {
+        box-shadow:
+          0 0 0 1px rgba(106, 61, 184, 0.3),
+          -6px 0 30px rgba(106, 61, 184, 0.3),
+          0 0 40px rgba(0, 0, 0, 0.8);
+      }
+      .arena-frame.p2-turn {
+        box-shadow:
+          0 0 0 1px rgba(139, 26, 26, 0.3),
+          6px 0 30px rgba(139, 26, 26, 0.3),
+          0 0 40px rgba(0, 0, 0, 0.8);
+      }
+
+      .arena-bg {
+        position: absolute;
+        inset: 0;
+        background:
+          radial-gradient(
+            ellipse 60% 80% at 50% 100%,
+            rgba(80, 65, 100, 0.3) 0%,
+            transparent 70%
+          ),
+          radial-gradient(
+            ellipse 30% 60% at 50% 20%,
+            rgba(160, 140, 200, 0.08) 0%,
+            transparent 60%
+          );
+      }
+      .stone-floor {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 30%;
+        background: linear-gradient(180deg, #2a2238 0%, #1e1a2a 100%);
+        background-image:
+          repeating-linear-gradient(
+            0deg,
+            rgba(255, 255, 255, 0.03) 0px,
+            rgba(255, 255, 255, 0.03) 1px,
+            transparent 1px,
+            transparent 28px
+          ),
+          repeating-linear-gradient(
+            90deg,
+            rgba(255, 255, 255, 0.03) 0px,
+            rgba(255, 255, 255, 0.03) 1px,
+            transparent 1px,
+            transparent 36px
+          );
+      }
+      .window-glow {
+        position: absolute;
+        top: 5%;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 22%;
+        height: 60%;
+        background: radial-gradient(
+          ellipse at 50% 30%,
+          rgba(180, 160, 255, 0.12) 0%,
+          rgba(100, 80, 200, 0.06) 40%,
+          transparent 70%
+        );
+        clip-path: polygon(
+          20% 0%,
+          80% 0%,
+          100% 40%,
+          100% 100%,
+          0% 100%,
+          0% 40%
+        );
+      }
+      .pillar {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 5%;
+        background: linear-gradient(
+          90deg,
+          #1a1428 0%,
+          #2d2440 30%,
+          #1f1830 70%,
+          #130f1e 100%
+        );
+        border-right: 1px solid rgba(201, 168, 76, 0.1);
+      }
+      .pillar.left {
+        left: 10%;
+      }
+      .pillar.right {
+        right: 10%;
+      }
+      .pillar::before,
+      .pillar::after {
+        content: "";
+        position: absolute;
+        left: 0;
+        right: 0;
+        height: 8px;
+        background: linear-gradient(90deg, #1a1428, #3d3258, #1a1428);
+        border-top: 1px solid rgba(201, 168, 76, 0.15);
+      }
+      .pillar::before {
+        top: 0;
+      }
+      .pillar::after {
+        bottom: 30%;
+      }
+
+      .wizards-container {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        padding: 0 8% 0;
+      }
+
+      .wizard {
+        position: relative;
+        width: 160px;
+        height: 85%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-end;
+        transition: transform 0.2s ease;
+      }
+      .wizard.casting {
+        animation: cast-shake 0.4s ease;
+      }
+      .wizard.hit {
+        animation: hit-flash 0.5s ease;
+      }
+
+      @keyframes cast-shake {
+        0% {
+          transform: translateX(0);
+        }
+        25% {
+          transform: translateX(-8px) rotate(-3deg);
+        }
+        75% {
+          transform: translateX(4px) rotate(1deg);
+        }
+        100% {
+          transform: translateX(0) rotate(0);
+        }
+      }
+      @keyframes hit-flash {
+        0%,
+        100% {
+          filter: none;
+        }
+        30% {
+          filter: brightness(3) saturate(0);
+        }
+        60% {
+          filter: brightness(0.5);
+        }
+      }
+      .wizard.p2 {
+        transform: scaleX(-1);
+      }
+      .wizard.p2.casting {
+        animation: cast-shake-right 0.4s ease;
+      }
+      @keyframes cast-shake-right {
+        0% {
+          transform: scaleX(-1) translateX(0);
+        }
+        25% {
+          transform: scaleX(-1) translateX(-8px) rotate(-3deg);
+        }
+        75% {
+          transform: scaleX(-1) translateX(4px) rotate(1deg);
+        }
+        100% {
+          transform: scaleX(-1) translateX(0) rotate(0);
+        }
+      }
+      .wizard-svg {
+        width: 100%;
+        height: 100%;
+      }
+      .wand-glow {
+        position: absolute;
+        right: 15%;
+        top: 42%;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: var(--lightning);
+        opacity: 0;
+        box-shadow: 0 0 20px 8px rgba(255, 255, 180, 0.8);
+        transition: opacity 0.1s;
+        pointer-events: none;
+      }
+      .wizard.p2 .wand-glow {
+        right: auto;
+        left: 15%;
+      }
+      .wizard.casting .wand-glow {
+        opacity: 1;
+        animation: wand-pulse 0.4s ease;
+      }
+      @keyframes wand-pulse {
+        0% {
+          opacity: 0;
+          transform: scale(0.5);
+        }
+        40% {
+          opacity: 1;
+          transform: scale(1.5);
+        }
+        100% {
+          opacity: 0;
+          transform: scale(0.8);
+        }
+      }
+
+      .lightning-canvas {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        z-index: 10;
+      }
+
+      .spell-impact {
+        position: absolute;
+        top: 40%;
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        transform: translate(-50%, -50%) scale(0);
+        opacity: 0;
+        pointer-events: none;
+        z-index: 11;
+      }
+      .spell-impact.active {
+        animation: impact-burst 0.5s ease forwards;
+      }
+      @keyframes impact-burst {
+        0% {
+          transform: translate(-50%, -50%) scale(0);
+          opacity: 1;
+        }
+        60% {
+          transform: translate(-50%, -50%) scale(2.5);
+          opacity: 0.8;
+        }
+        100% {
+          transform: translate(-50%, -50%) scale(4);
+          opacity: 0;
+        }
+      }
+
+      /* Overlays */
+      .arena-overlay {
+        position: absolute;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.82);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 20;
+        flex-direction: column;
+        gap: 14px;
+        border-radius: 6px;
+      }
+      .arena-overlay.show {
+        display: flex;
+      }
+
+      .overlay-title {
+        font-family: "Cinzel Decorative", serif;
+        font-size: clamp(1.2rem, 3vw, 2rem);
+        color: var(--gold-light);
+        text-shadow: 0 0 30px rgba(240, 208, 96, 0.7);
+        animation: winner-glow 1.5s ease-in-out infinite alternate;
+        text-align: center;
+        padding: 0 20px;
+      }
+      @keyframes winner-glow {
+        from {
+          text-shadow: 0 0 20px rgba(240, 208, 96, 0.5);
+        }
+        to {
+          text-shadow:
+            0 0 40px rgba(240, 208, 96, 1),
+            0 0 80px rgba(240, 208, 96, 0.4);
+        }
+      }
+
+      .overlay-sub {
+        font-size: 0.62rem;
+        color: rgba(255, 255, 255, 0.45);
+        letter-spacing: 0.2em;
+        text-align: center;
+      }
+
+      .waiting-dots::after {
+        content: "";
+        animation: dots 1.5s steps(4, end) infinite;
+      }
+      @keyframes dots {
+        0% {
+          content: "";
+        }
+        25% {
+          content: ".";
+        }
+        50% {
+          content: "..";
+        }
+        75% {
+          content: "...";
+        }
+        100% {
+          content: "";
+        }
+      }
+
+      /* BOTTOM PANEL */
+      .bottom-panel {
+        width: 100%;
+        background: linear-gradient(180deg, #0f0c18 0%, #0a0810 100%);
+        border: 1px solid var(--gold);
+        border-top: none;
+        border-radius: 0 0 6px 6px;
+        padding: 14px 20px 16px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .spell-group {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+      }
+
+      /* Spell buttons */
+      .spell-btn {
+        position: relative;
+        width: 68px;
+        height: 68px;
+        cursor: pointer;
+        border: none;
+        background: none;
+        padding: 0;
+        transition:
+          transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+          filter 0.2s ease;
+        outline: none;
+      }
+      .spell-btn:hover:not(:disabled) {
+        transform: scale(1.15) translateY(-3px);
+      }
+      .spell-btn:active:not(:disabled) {
+        transform: scale(0.95);
+      }
+      .spell-btn:disabled {
+        opacity: 0.3;
+        cursor: not-allowed;
+      }
+
+      .spell-btn-inner {
+        width: 100%;
+        height: 100%;
+        clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+      }
+
+      .spell-btn.accio .spell-btn-inner {
+        background: linear-gradient(135deg, #3a1e7a, #6a3db8, #4a2a90);
+        box-shadow: 0 4px 20px rgba(106, 61, 184, 0.5);
+      }
+      .spell-btn.levioso .spell-btn-inner {
+        background: linear-gradient(135deg, #7a5010, #c9930c, #8a6218);
+        box-shadow: 0 4px 20px rgba(201, 147, 12, 0.5);
+      }
+      .spell-btn.incendio .spell-btn-inner {
+        background: linear-gradient(135deg, #5a0a0a, #bb1c1c, #7a1010);
+        box-shadow: 0 4px 20px rgba(187, 28, 28, 0.5);
+      }
+
+      .spell-btn.accio:hover:not(:disabled) .spell-btn-inner {
+        box-shadow:
+          0 6px 28px rgba(106, 61, 184, 0.85),
+          0 0 0 2px rgba(180, 120, 255, 0.4);
+      }
+      .spell-btn.levioso:hover:not(:disabled) .spell-btn-inner {
+        box-shadow:
+          0 6px 28px rgba(201, 147, 12, 0.85),
+          0 0 0 2px rgba(255, 210, 80, 0.4);
+      }
+      .spell-btn.incendio:hover:not(:disabled) .spell-btn-inner {
+        box-shadow:
+          0 6px 28px rgba(187, 28, 28, 0.85),
+          0 0 0 2px rgba(255, 120, 80, 0.4);
+      }
+
+      .spell-btn::before {
+        content: "";
+        position: absolute;
+        inset: -3px;
+        clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+        z-index: -1;
+      }
+      .spell-btn.accio::before {
+        background: linear-gradient(135deg, #c080ff, #7040c0);
+      }
+      .spell-btn.levioso::before {
+        background: linear-gradient(135deg, #ffd060, #c09010);
+      }
+      .spell-btn.incendio::before {
+        background: linear-gradient(135deg, #ff8060, #c02020);
+      }
+
+      .spell-icon {
+        width: 36px;
+        height: 36px;
+        object-fit: contain;
+        filter: brightness(1.3) drop-shadow(0 1px 3px rgba(0, 0, 0, 0.7));
+        pointer-events: none;
+      }
+
+      .spell-name {
+        position: absolute;
+        bottom: -18px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 0.48rem;
+        letter-spacing: 0.12em;
+        color: rgba(201, 168, 76, 0.7);
+        white-space: nowrap;
+        font-weight: 700;
+        text-transform: uppercase;
+      }
+
+      .center-info {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        flex: 1;
+      }
+
+      .duel-label {
+        font-family: "Cinzel Decorative", serif;
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--gold);
+        letter-spacing: 0.5em;
+        text-shadow: 0 0 12px rgba(201, 168, 76, 0.4);
+      }
+
+      .turn-indicator {
+        font-size: 0.58rem;
+        letter-spacing: 0.15em;
+        color: rgba(255, 255, 255, 0.55);
+        text-transform: uppercase;
+      }
+      .turn-indicator span {
+        color: var(--gold-light);
+        font-weight: 700;
+      }
+
+      .spell-log {
+        font-size: 0.56rem;
+        letter-spacing: 0.1em;
+        color: rgba(255, 255, 255, 0.4);
+        text-align: center;
+        min-height: 14px;
+        font-style: italic;
+      }
+      .spell-log.p1-cast {
+        color: rgba(180, 120, 255, 0.7);
+      }
+      .spell-log.p2-cast {
+        color: rgba(255, 120, 100, 0.7);
+      }
+
+      /* Damage float */
+      .damage-float {
+        position: absolute;
+        font-family: "Cinzel", serif;
+        font-size: 1.4rem;
+        font-weight: 900;
+        color: #fff;
+        text-shadow:
+          0 0 10px rgba(255, 100, 100, 0.8),
+          2px 2px 0 rgba(0, 0, 0, 0.8);
+        pointer-events: none;
+        animation: float-up 1.2s ease forwards;
+        z-index: 15;
+      }
+      @keyframes float-up {
+        0% {
+          transform: translateY(0) scale(1.5);
+          opacity: 1;
+        }
+        60% {
+          transform: translateY(-50px) scale(1);
+          opacity: 1;
+        }
+        100% {
+          transform: translateY(-80px) scale(0.8);
+          opacity: 0;
+        }
+      }
+
+      /* Connection badge */
+      .conn-badge {
+        position: fixed;
+        top: 12px;
+        right: 16px;
+        font-size: 0.52rem;
+        letter-spacing: 0.12em;
+        padding: 5px 12px;
+        border-radius: 20px;
+        text-transform: uppercase;
+        font-weight: 700;
+        transition: all 0.3s;
+      }
+      .conn-badge.online {
+        background: rgba(30, 120, 30, 0.25);
+        border: 1px solid rgba(80, 200, 80, 0.4);
+        color: #80ff80;
+      }
+      .conn-badge.offline {
+        background: rgba(180, 30, 30, 0.25);
+        border: 1px solid rgba(200, 80, 80, 0.4);
+        color: #ff8080;
+      }
+
+      /* Ping display */
+      .room-info {
+        position: fixed;
+        top: 12px;
+        left: 16px;
+        font-size: 0.52rem;
+        letter-spacing: 0.12em;
+        color: rgba(201, 168, 76, 0.5);
+        text-transform: uppercase;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- ══ CONFIG NOTICE (shown if Firebase not configured) ══ -->
+    <div
+      id="config-notice"
+      style="
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        gap: 20px;
+        padding: 40px;
+        max-width: 640px;
+        width: 95vw;
+      "
+    >
+      <div class="logo">Wizard Duel</div>
+      <div class="config-card">
+        <h2>⚙️ Firebase Setup Required</h2>
+        <p>
+          To enable online multiplayer, you need a free Firebase project. Here's
+          how:
+        </p>
+        <p>
+          <strong style="color: var(--gold)">Step 1.</strong> Go to
+          <a href="https://console.firebase.google.com" target="_blank"
+            >console.firebase.google.com</a
+          >
+          → Create a project (disable Analytics for speed).
+        </p>
+        <p>
+          <strong style="color: var(--gold)">Step 2.</strong> Click
+          <em>Realtime Database</em> → Create database → Start in
+          <strong>test mode</strong>.
+        </p>
+        <p>
+          <strong style="color: var(--gold)">Step 3.</strong> Click the ⚙️ gear
+          → Project settings → Add app → Web → copy your config.
+        </p>
+        <p>
+          <strong style="color: var(--gold)">Step 4.</strong> Replace the
+          <code>FIREBASE_CONFIG</code> object at the top of this file's
+          &lt;script&gt; with your values:
+        </p>
+        <code
+          >const FIREBASE_CONFIG = { apiKey: "AIza...", authDomain:
+          "your-project.firebaseapp.com", databaseURL:
+          "https://your-project-default-rtdb.firebaseio.com", projectId:
+          "your-project", storageBucket: "your-project.appspot.com",
+          messagingSenderId: "123456789", appId: "1:123:web:abc" };</code
+        >
+        <p style="margin-top: 8px">
+          💡 The Realtime Database free tier (Spark plan) supports 100
+          simultaneous connections and 1 GB storage — plenty for this game.
+        </p>
+      </div>
+    </div>
+
+    <!-- ══ LOBBY SCREEN ══ -->
+    <div id="lobby-screen">
+      <div class="logo">Wizard Duel</div>
+
+      <div class="lobby-card" id="card-main">
+        <h2>⚡ Online Duel</h2>
+        <button class="gold-btn" onclick="createRoom()">
+          ✦ Create New Room
+        </button>
+        <div class="divider">or</div>
+        <div style="display: flex; gap: 8px">
+          <input
+            class="input-field"
+            id="join-code"
+            placeholder="Enter room code…"
+            maxlength="6"
+            style="text-transform: uppercase"
+          />
+          <button
+            class="ghost-btn"
+            onclick="joinRoom()"
+            style="white-space: nowrap"
+          >
+            Join
+          </button>
+        </div>
+        <p class="lobby-note">
+          Share the room code or link with your opponent.<br />Player 1 goes
+          first. Each spell does different damage.
+        </p>
+      </div>
+
+      <!-- Waiting card (shown after room created) -->
+      <div class="lobby-card" id="card-waiting" style="display: none">
+        <h2>🔮 Room Created</h2>
+        <div class="share-box">
+          <div class="share-url" id="share-url-display">—</div>
+          <button class="copy-btn" onclick="copyLink()">Copy Link</button>
+        </div>
+        <div style="text-align: center">
+          <div class="lobby-note" style="margin-bottom: 8px">Room code:</div>
+          <div
+            style="
+              font-family: &quot;Cinzel Decorative&quot;, serif;
+              font-size: 2rem;
+              color: var(--gold);
+              letter-spacing: 0.4em;
+              text-shadow: 0 0 16px rgba(201, 168, 76, 0.4);
+            "
+            id="room-code-display"
+          >
+            —
+          </div>
+        </div>
+        <div class="status-pill waiting">
+          Waiting for opponent<span class="waiting-dots"></span>
+        </div>
+        <button
+          class="ghost-btn"
+          onclick="cancelRoom()"
+          style="font-size: 0.6rem; padding: 8px"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+
+    <!-- ══ GAME SCREEN ══ -->
+    <div id="game-screen">
+      <div class="conn-badge online" id="conn-badge">● Online</div>
+      <div class="room-info" id="room-info-badge"></div>
+
+      <div class="title-banner">Wizard's Duel</div>
+
+      <!-- HUD -->
+      <div class="hud">
+        <div class="player-hud left">
+          <div class="player-label">
+            Student I
+            <span class="you-badge" id="p1-you-badge" style="display: none"
+              >YOU</span
+            >
+          </div>
+          <div class="hp-row">
+            <span class="heart-icon">❤️</span>
+            <div class="hp-bar-bg">
+              <div class="hp-bar-fill" id="hp1-bar"></div>
+            </div>
+            <div class="hp-text" id="hp1-text">HP 100</div>
+          </div>
+        </div>
+
+        <div class="vs-badge">⚡ VS ⚡</div>
+
+        <div class="player-hud right">
+          <div class="player-label">
+            <span class="you-badge" id="p2-you-badge" style="display: none"
+              >YOU</span
+            >
+            Student II
+          </div>
+          <div class="hp-row">
+            <span class="heart-icon">❤️</span>
+            <div class="hp-bar-bg">
+              <div class="hp-bar-fill" id="hp2-bar"></div>
+            </div>
+            <div class="hp-text" id="hp2-text">HP 100</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Arena -->
+      <div class="arena-frame" id="arena">
+        <div class="arena-bg"></div>
+        <div class="window-glow"></div>
+        <div class="pillar left"></div>
+        <div class="pillar right"></div>
+        <div class="stone-floor"></div>
+
+        <div class="wizards-container">
+          <!-- Wizard P1 -->
+        <div class="container">
+  <!-- Character One: Red Hair -->
+  <div class="character one">
+    <div class="hair-a"></div>
+    <div class="extra-a"></div>
+    <div class="head"></div>
+    <div class="body"></div>
+  </div>
+          <!-- Wizard P2 -->
+          <div class="wizard p2" id="wizard2">
+            <svg
+              class="wizard-svg"
+              viewBox="0 0 120 220"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M30 80 Q20 130 15 220 L105 220 Q100 130 90 80 Z"
+                fill="#1a1a2e"
+                stroke="#2a2a4e"
+                stroke-width="1"
+              />
+              <path
+                d="M45 85 Q38 130 35 220 L42 220 Q48 130 52 85 Z"
+                fill="rgba(255,255,255,0.04)"
+              />
+              <path
+                d="M25 75 Q10 110 5 180 L15 180 Q20 115 30 80 Z"
+                fill="#0f0f22"
+                stroke="#222240"
+                stroke-width="0.5"
+              />
+              <path
+                d="M95 75 Q110 110 115 180 L105 180 Q100 115 90 80 Z"
+                fill="#0f0f22"
+                stroke="#222240"
+                stroke-width="0.5"
+              />
+              <rect
+                x="42"
+                y="55"
+                width="36"
+                height="28"
+                rx="4"
+                fill="#1a1a2e"
+                stroke="#333360"
+                stroke-width="1"
+              />
+              <rect
+                x="48"
+                y="58"
+                width="24"
+                height="22"
+                rx="3"
+                fill="#e8e4d8"
+              />
+              <ellipse cx="60" cy="38" rx="18" ry="22" fill="#f0dfc0" />
+              <path
+                d="M42 30 Q44 12 60 10 Q76 12 78 30 Q72 20 60 19 Q48 20 42 30 Z"
+                fill="#d4a820"
+              />
+              <path d="M42 30 Q38 38 42 45 Q44 32 48 28 Z" fill="#c49818" />
+              <circle cx="52" cy="38" r="2.5" fill="#5a7a8a" />
+              <circle cx="68" cy="38" r="2.5" fill="#5a7a8a" />
+              <path
+                d="M85 85 Q105 100 118 95"
+                stroke="#1a1a2e"
+                stroke-width="12"
+                stroke-linecap="round"
+                fill="none"
+              />
+              <path
+                d="M85 85 Q105 100 118 95"
+                stroke="#0f0f22"
+                stroke-width="10"
+                stroke-linecap="round"
+                fill="none"
+              />
+              <ellipse cx="118" cy="95" rx="5" ry="4" fill="#f0dfc0" />
+              <line
+                x1="118"
+                y1="93"
+                x2="135"
+                y2="88"
+                stroke="#4a2a0a"
+                stroke-width="2.5"
+                stroke-linecap="round"
+              />
+              <path
+                d="M35 85 Q18 70 8 78"
+                stroke="#1a1a2e"
+                stroke-width="10"
+                stroke-linecap="round"
+                fill="none"
+              />
+            </svg>
+            <div class="wand-glow"></div>
+          </div>
+        </div>
+
+        <canvas class="lightning-canvas" id="lightning-canvas"></canvas>
+        <div class="spell-impact" id="spell-impact"></div>
+
+        <!-- Waiting for opponent overlay -->
+        <div class="arena-overlay" id="overlay-waiting">
+          <div class="overlay-title">Awaiting Opponent</div>
+          <div class="overlay-sub waiting-dots">Searching the halls</div>
+        </div>
+
+        <!-- Game over overlay -->
+        <div class="arena-overlay" id="overlay-gameover">
+          <div class="overlay-title" id="winner-text">Player 1 Wins!</div>
+          <div class="overlay-sub" id="winner-sub"></div>
+          <button
+            class="gold-btn"
+            style="margin-top: 8px"
+            onclick="requestRematch()"
+          >
+            ✦ Request Rematch ✦
+          </button>
+          <button
+            class="ghost-btn"
+            style="font-size: 0.6rem; padding: 8px; margin-top: 4px"
+            onclick="backToLobby()"
+          >
+            Return to Lobby
+          </button>
+        </div>
+
+        <!-- Rematch waiting -->
+        <div class="arena-overlay" id="overlay-rematch">
+          <div class="overlay-title" style="font-size: 1.2rem">
+            Rematch Requested
+          </div>
+          <div class="overlay-sub waiting-dots">Waiting for opponent</div>
+          <button
+            class="ghost-btn"
+            style="font-size: 0.6rem; padding: 8px; margin-top: 8px"
+            onclick="backToLobby()"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+
+      <!-- Bottom Panel -->
+      <div class="bottom-panel">
+        <div class="spell-group" id="p1-spells">
+          <button
+            class="spell-btn accio"
+            onclick="castSpell('accio')"
+            title="Accio – 15 dmg"
+          >
+            <div class="spell-btn-inner">
+              <img
+                class="spell-icon"
+                src="https://static.wikia.nocookie.net/sorting-hat/images/a/a1/Accio_icon.png"
+                alt="Accio"
+                onerror="this.style.display = 'none'"
+              />
+            </div>
+            <div class="spell-name">Accio</div>
+          </button>
+          <button
+            class="spell-btn levioso"
+            onclick="castSpell('levioso')"
+            title="Levioso – 10 dmg"
+          >
+            <div class="spell-btn-inner">
+              <img
+                class="spell-icon"
+                src="https://static.wikia.nocookie.net/sorting-hat/images/8/88/Levioso_icon.png"
+                alt="Levioso"
+                onerror="this.style.display = 'none'"
+              />
+            </div>
+            <div class="spell-name">Levioso</div>
+          </button>
+          <button
+            class="spell-btn incendio"
+            onclick="castSpell('incendio')"
+            title="Incendio – 20 dmg"
+          >
+            <div class="spell-btn-inner">
+              <img
+                class="spell-icon"
+                src="https://static.wikia.nocookie.net/sorting-hat/images/5/54/Incendio_icon.png"
+                alt="Incendio"
+                onerror="this.style.display = 'none'"
+              />
+            </div>
+            <div class="spell-name">Incendio</div>
+          </button>
+        </div>
+
+        <div class="center-info">
+          <div class="duel-label">DUEL</div>
+          <div class="turn-indicator">Turn: <span id="turn-label">—</span></div>
+          <div class="spell-log" id="spell-log">
+            Waiting for the duel to begin…
+          </div>
+        </div>
+
+        <!-- P2 always shows same spell set; we disable based on turn -->
+        <div class="spell-group" id="p2-spells">
+          <button
+            class="spell-btn incendio"
+            onclick="castSpell('incendio')"
+            title="Incendio – 20 dmg"
+          >
+            <div class="spell-btn-inner">
+              <img
+                class="spell-icon"
+                src="https://static.wikia.nocookie.net/sorting-hat/images/5/54/Incendio_icon.png"
+                alt="Incendio"
+                onerror="this.style.display = 'none'"
+              />
+            </div>
+            <div class="spell-name">Incendio</div>
+          </button>
+          <button
+            class="spell-btn levioso"
+            onclick="castSpell('levioso')"
+            title="Levioso – 10 dmg"
+          >
+            <div class="spell-btn-inner">
+              <img
+                class="spell-icon"
+                src="https://static.wikia.nocookie.net/sorting-hat/images/8/88/Levioso_icon.png"
+                alt="Levioso"
+                onerror="this.style.display = 'none'"
+              />
+            </div>
+            <div class="spell-name">Levioso</div>
+          </button>
+          <button
+            class="spell-btn accio"
+            onclick="castSpell('accio')"
+            title="Accio – 15 dmg"
+          >
+            <div class="spell-btn-inner">
+              <img
+                class="spell-icon"
+                src="https://static.wikia.nocookie.net/sorting-hat/images/a/a1/Accio_icon.png"
+                alt="Accio"
+                onerror="this.style.display = 'none'"
+              />
+            </div>
+            <div class="spell-name">Accio</div>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      /* ══════════════════════════════════════════════════════
+   FIREBASE CONFIG — Replace with your own project values
+   Get them from: Firebase Console → Project Settings → Web App
+══════════════════════════════════════════════════════ */
+
+      const FIREBASE_CONFIG = {
+        apiKey: "AIzaSyB_sZZZ__PI_RidLMyMSgf6lrgou0buPz4",
+        authDomain: "harry-potter-b5d3d.firebaseapp.com",
+        databaseURL:
+          "https://harry-potter-b5d3d-default-rtdb.europe-west1.firebasedatabase.app",
+        projectId: "harry-potter-b5d3d",
+        storageBucket: "harry-potter-b5d3d.firebasestorage.app",
+        messagingSenderId: "502104007950",
+        appId: "1:502104007950:web:2aaa09f34d079a0d14635f",
+        measurementId: "G-D87K81BFEV",
+      };
+
+      /* ══ SPELL DATA ══ */
+      const SPELLS = {
+        accio: { damage: 15, color: "#a060ff", label: "Accio" },
+        levioso: { damage: 10, color: "#f0c030", label: "Levioso" },
+        incendio: { damage: 20, color: "#ff4020", label: "Incendio" },
+      };
+
+      /* ══ LOCAL STATE ══ */
+      let db, roomRef, stateRef;
+      let myRole = null; // 'p1' | 'p2'
+      let roomCode = null;
+      let localBusy = false; // animation lock — local only
+      let lastRenderedState = null;
+
+      /* ══ DETECT CONFIG ══ */
+      function isConfigured() {
+        return (
+          FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.apiKey !== "YOUR_API_KEY"
+        );
+      }
+
+      /* ══ INIT ══ */
+      window.addEventListener("DOMContentLoaded", () => {
+        if (!isConfigured()) {
+          document.getElementById("lobby-screen").style.display = "none";
+          document.getElementById("config-notice").style.display = "flex";
+          return;
+        }
+
+        firebase.initializeApp(FIREBASE_CONFIG);
+        db = firebase.database();
+
+        // Check URL for room code
+        const params = new URLSearchParams(window.location.search);
+        const codeInUrl = params.get("room");
+        if (codeInUrl) {
+          document.getElementById("join-code").value = codeInUrl.toUpperCase();
+          joinRoom();
+        }
+      });
+
+      /* ══ UTILITIES ══ */
+      function genCode() {
+        const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+        return Array.from(
+          { length: 6 },
+          () => chars[Math.floor(Math.random() * chars.length)],
+        ).join("");
+      }
+
+      function shareURL(code) {
+        const u = new URL(window.location.href.split("?")[0]);
+        u.searchParams.set("room", code);
+        return u.toString();
+      }
+
+      function copyLink() {
+        const url = shareURL(roomCode);
+        navigator.clipboard.writeText(url).then(() => {
+          const btn = document.querySelector(".copy-btn");
+          btn.textContent = "Copied!";
+          setTimeout(() => (btn.textContent = "Copy Link"), 2000);
+        });
+      }
+
+      /* ══ ROOM MANAGEMENT ══ */
+      async function createRoom() {
+        const code = genCode();
+        roomCode = code;
+        myRole = "p1";
+
+        const initialState = {
+          hp1: 100,
+          hp2: 100,
+          turn: "p1",
+          status: "waiting", // waiting | active | gameover
+          lastSpell: null,
+          lastCaster: null,
+          winner: null,
+          rematch: { p1: false, p2: false },
+          p2joined: false,
+          createdAt: Date.now(),
+        };
+
+        roomRef = db.ref(`rooms/${code}`);
+        stateRef = roomRef.child("state");
+
+        await stateRef.set(initialState);
+
+        // Auto-delete room after 30 min
+        roomRef.child("ttl").set(Date.now() + 30 * 60 * 1000);
+
+        document.getElementById("card-main").style.display = "none";
+        document.getElementById("card-waiting").style.display = "flex";
+        document.getElementById("room-code-display").textContent = code;
+        document.getElementById("share-url-display").textContent =
+          shareURL(code);
+
+        // Watch for p2 joining
+        stateRef.on("value", (snap) => {
+          const s = snap.val();
+          if (!s) return;
+          if (s.status === "active" && s.p2joined) {
+            enterGame();
+          }
+        });
+      }
+
+      async function joinRoom() {
+        const code = (document.getElementById("join-code").value || "")
+          .trim()
+          .toUpperCase();
+        if (code.length < 4) {
+          alert("Please enter a valid room code.");
+          return;
+        }
+
+        roomCode = code;
+        myRole = "p2";
+        roomRef = db.ref(`rooms/${code}`);
+        stateRef = roomRef.child("state");
+
+        const snap = await stateRef.once("value");
+        const s = snap.val();
+
+        if (!s) {
+          showLobbyError("Room not found. Check the code and try again.");
+          return;
+        }
+        if (s.status !== "waiting" && s.status !== "active") {
+          showLobbyError("This room is no longer available.");
+          return;
+        }
+        if (s.p2joined && s.status === "active") {
+          showLobbyError("This room is already full.");
+          return;
+        }
+
+        await stateRef.update({ p2joined: true, status: "active" });
+        enterGame();
+      }
+
+      function showLobbyError(msg) {
+        const el =
+          document.getElementById("card-main").querySelector(".lobby-note") ||
+          document.createElement("div");
+        el.className = "status-pill error";
+        el.textContent = msg;
+        document.getElementById("card-main").appendChild(el);
+        setTimeout(() => el.remove(), 4000);
+      }
+
+      async function cancelRoom() {
+        if (roomRef) await stateRef.update({ status: "cancelled" });
+        stateRef.off();
+        roomRef = stateRef = null;
+        roomCode = myRole = null;
+        document.getElementById("card-main").style.display = "flex";
+        document.getElementById("card-waiting").style.display = "none";
+      }
+
+      /* ══ ENTER GAME ══ */
+      function enterGame() {
+        stateRef.off(); // remove lobby listener
+
+        document.getElementById("lobby-screen").style.display = "none";
+        document.getElementById("game-screen").style.display = "flex";
+
+        // Badge
+        document.getElementById(`${myRole}-you-badge`).style.display = "inline";
+        document.getElementById("room-info-badge").textContent =
+          `Room ${roomCode}`;
+
+        // Resize canvas
+        resizeCanvas();
+        window.addEventListener("resize", resizeCanvas);
+
+        // Listen for state changes
+        stateRef.on("value", (snap) => {
+          const s = snap.val();
+          if (!s) return;
+          renderState(s);
+        });
+
+        // Connection indicator
+        db.ref(".info/connected").on("value", (snap) => {
+          const badge = document.getElementById("conn-badge");
+          if (snap.val()) {
+            badge.className = "conn-badge online";
+            badge.textContent = "● Online";
+          } else {
+            badge.className = "conn-badge offline";
+            badge.textContent = "○ Offline";
+          }
+        });
+      }
+
+      /* ══ RENDER STATE (runs whenever Firebase updates) ══ */
+      function renderState(s) {
+        updateHUD(s.hp1, s.hp2, s.turn);
+
+        // Animate spell if new cast arrived
+        if (
+          lastRenderedState &&
+          s.lastSpell &&
+          s.lastCaster &&
+          (s.lastSpell !== lastRenderedState.lastSpell ||
+            s.lastCaster !== lastRenderedState.lastCaster)
+        ) {
+          playSpellAnimation(s.lastCaster, s.lastSpell, s.lastDamage || 0);
+        }
+
+        // Overlays
+        hideAllOverlays();
+        if (s.status === "waiting") {
+          showOverlay("overlay-waiting");
+          disableAllSpells();
+        } else if (s.status === "active") {
+          // Show my spells only on my turn
+          const myTurn = s.turn === myRole;
+          setMySpellsEnabled(myTurn && !localBusy);
+        } else if (s.status === "gameover") {
+          showOverlay("overlay-gameover");
+          disableAllSpells();
+          const winnerLabel =
+            s.winner === "p1" ? "Student I Wins" : "Student II Wins";
+          document.getElementById("winner-text").textContent =
+            winnerLabel + " ✨";
+          document.getElementById("winner-sub").textContent =
+            s.winner === myRole
+              ? "Victory is yours!"
+              : "Better luck next time…";
+        } else if (s.status === "rematch-waiting") {
+          const myReady = s.rematch && s.rematch[myRole];
+          showOverlay(myReady ? "overlay-rematch" : "overlay-gameover");
+          if (!myReady) {
+            document.getElementById("winner-text").textContent = "Rematch?";
+            document.getElementById("winner-sub").textContent =
+              "Your opponent wants a rematch!";
+          }
+          disableAllSpells();
+        }
+
+        lastRenderedState = { ...s };
+      }
+
+      /* ══ CAST SPELL ══ */
+      async function castSpell(spellName) {
+        if (!stateRef || localBusy) return;
+
+        // Read current state
+        const snap = await stateRef.once("value");
+        const s = snap.val();
+
+        if (!s || s.status !== "active" || s.turn !== myRole) return;
+        if (localBusy) return;
+
+        localBusy = true;
+        disableAllSpells();
+
+        const spell = SPELLS[spellName];
+        const targetRole = myRole === "p1" ? "p2" : "p1";
+        const targetHpKey = targetRole === "p1" ? "hp1" : "hp2";
+        const newHp = Math.max(0, s[targetHpKey] - spell.damage);
+        const gameOver = newHp <= 0;
+
+        const update = {
+          [targetHpKey]: newHp,
+          turn: targetRole,
+          lastSpell: spellName,
+          lastCaster: myRole,
+          lastDamage: spell.damage,
+          status: gameOver ? "gameover" : "active",
+          winner: gameOver ? myRole : null,
+        };
+
+        await stateRef.update(update);
+
+        // Release lock after animation
+        setTimeout(() => {
+          localBusy = false;
+        }, 900);
+      }
+
+      /* ══ ANIMATIONS ══ */
+      const canvas = document.getElementById("lightning-canvas");
+      const ctx = canvas.getContext("2d");
+
+      function resizeCanvas() {
+        const arena = document.getElementById("arena");
+        canvas.width = arena.offsetWidth;
+        canvas.height = arena.offsetHeight;
+      }
+
+      function playSpellAnimation(casterRole, spellName, damage) {
+        const spell = SPELLS[spellName] || SPELLS.accio;
+        const casterNum = casterRole === "p1" ? 1 : 2;
+        const targetNum = casterRole === "p1" ? 2 : 1;
+
+        const casterEl = document.getElementById(`wizard${casterNum}`);
+        const targetEl = document.getElementById(`wizard${targetNum}`);
+
+        // Update log
+        const log = document.getElementById("spell-log");
+        log.textContent = `Student ${casterNum === 1 ? "I" : "II"} casts ${spell.label}! (${damage} dmg)`;
+        log.className = `spell-log p${casterNum}-cast`;
+
+        // Caster shake
+        casterEl.classList.add("casting");
+        setTimeout(() => casterEl.classList.remove("casting"), 400);
+
+        // Lightning
+        resizeCanvas();
+        const cw = canvas.width,
+          ch = canvas.height;
+        const fromX = casterNum === 1 ? cw * 0.28 : cw * 0.72;
+        const toX = casterNum === 1 ? cw * 0.72 : cw * 0.28;
+        const fromY = ch * 0.42;
+
+        let frames = 0;
+        const animateLightning = () => {
+          drawLightning(fromX, fromY, toX, fromY, spell.color);
+          frames++;
+          if (frames < 10) requestAnimationFrame(animateLightning);
+          else clearLightning();
+        };
+        setTimeout(() => requestAnimationFrame(animateLightning), 100);
+
+        // Impact
+        setTimeout(() => {
+          const impactX = targetNum === 2 ? 72 : 28;
+          showImpact(impactX, spell.color);
+          targetEl.classList.add("hit");
+          setTimeout(() => targetEl.classList.remove("hit"), 500);
+          spawnDamageNumber(targetNum, damage);
+        }, 450);
+      }
+
+      function drawLightning(
+        x1,
+        y1,
+        x2,
+        y2,
+        color,
+        segments = 12,
+        spread = 18,
+      ) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const pts = [[x1, y1]];
+        for (let i = 1; i < segments; i++) {
+          const t = i / segments;
+          pts.push([
+            x1 + (x2 - x1) * t + (Math.random() - 0.5) * spread * 2,
+            y1 + (y2 - y1) * t + (Math.random() - 0.5) * spread,
+          ]);
+        }
+        pts.push([x2, y2]);
+
+        ctx.save();
+        ctx.shadowBlur = 24;
+        ctx.shadowColor = color;
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 3;
+        ctx.globalAlpha = 0.4;
+        ctx.beginPath();
+        ctx.moveTo(pts[0][0], pts[0][1]);
+        for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]);
+        ctx.stroke();
+
+        ctx.globalAlpha = 1;
+        ctx.strokeStyle = "#fff";
+        ctx.lineWidth = 1.5;
+        ctx.shadowBlur = 8;
+        ctx.shadowColor = "#fff";
+        ctx.beginPath();
+        ctx.moveTo(pts[0][0], pts[0][1]);
+        for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      function clearLightning() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+
+      function showImpact(xPct, color) {
+        const impact = document.getElementById("spell-impact");
+        impact.style.left = xPct + "%";
+        impact.style.background = `radial-gradient(circle, white 0%, ${color} 40%, transparent 70%)`;
+        impact.style.boxShadow = `0 0 30px 15px ${color}80`;
+        impact.classList.add("active");
+        setTimeout(() => impact.classList.remove("active"), 500);
+      }
+
+      function spawnDamageNumber(targetNum, damage) {
+        const arena = document.getElementById("arena");
+        const div = document.createElement("div");
+        div.className = "damage-float";
+        div.textContent = `-${damage}`;
+        div.style.left = targetNum === 1 ? "22%" : "68%";
+        div.style.top = "30%";
+        arena.appendChild(div);
+        setTimeout(() => div.remove(), 1200);
+      }
+
+      /* ══ HUD ══ */
+      function updateHUD(hp1, hp2, turn) {
+        [
+          [1, hp1],
+          [2, hp2],
+        ].forEach(([n, hp]) => {
+          const pct = Math.max(0, hp) + "%";
+          const bar = document.getElementById(`hp${n}-bar`);
+          bar.style.width = pct;
+          document.getElementById(`hp${n}-text`).textContent =
+            `HP ${Math.max(0, hp)}`;
+          if (hp <= 30)
+            bar.style.background = "linear-gradient(90deg, #8b0000, #c0392b)";
+          else if (hp <= 60)
+            bar.style.background = "linear-gradient(90deg, #c07010, #e08020)";
+          else bar.style.background = "";
+        });
+
+        const turnName = turn === "p1" ? "Student I" : "Student II";
+        document.getElementById("turn-label").textContent = turnName;
+        const arena = document.getElementById("arena");
+        arena.className = `arena-frame ${turn === "p1" ? "p1-turn" : "p2-turn"}`;
+      }
+
+      /* ══ BUTTON STATE ══ */
+      function disableAllSpells() {
+        document
+          .querySelectorAll(".spell-btn")
+          .forEach((b) => (b.disabled = true));
+      }
+
+      function setMySpellsEnabled(enabled) {
+        // Enable only the spell panel that belongs to my role
+        const myPanel = myRole === "p1" ? "p1-spells" : "p2-spells";
+        const otherPanel = myRole === "p1" ? "p2-spells" : "p1-spells";
+        document
+          .querySelectorAll(`#${myPanel} .spell-btn`)
+          .forEach((b) => (b.disabled = !enabled));
+        document
+          .querySelectorAll(`#${otherPanel} .spell-btn`)
+          .forEach((b) => (b.disabled = true));
+      }
+
+      /* ══ OVERLAYS ══ */
+      function hideAllOverlays() {
+        ["overlay-waiting", "overlay-gameover", "overlay-rematch"].forEach(
+          (id) => {
+            document.getElementById(id).classList.remove("show");
+          },
+        );
+      }
+      function showOverlay(id) {
+        document.getElementById(id).classList.add("show");
+      }
+
+      /* ══ REMATCH ══ */
+      async function requestRematch() {
+        if (!stateRef) return;
+        const snap = await stateRef.once("value");
+        const s = snap.val();
+
+        const myReady = true;
+        const otherRole = myRole === "p1" ? "p2" : "p1";
+        const otherReady = s.rematch && s.rematch[otherRole];
+
+        if (otherReady) {
+          // Both ready — reset game
+          await stateRef.update({
+            hp1: 100,
+            hp2: 100,
+            turn: "p1",
+            status: "active",
+            lastSpell: null,
+            lastCaster: null,
+            winner: null,
+            rematch: { p1: false, p2: false },
+          });
+        } else {
+          await stateRef.update({
+            status: "rematch-waiting",
+            [`rematch/${myRole}`]: true,
+          });
+        }
+      }
+
+      /* ══ BACK TO LOBBY ══ */
+      function backToLobby() {
+        if (stateRef) stateRef.off();
+        roomRef = stateRef = null;
+        roomCode = myRole = null;
+        localBusy = false;
+        lastRenderedState = null;
+
+        document.getElementById("game-screen").style.display = "none";
+        document.getElementById("lobby-screen").style.display = "flex";
+        document.getElementById("card-main").style.display = "flex";
+        document.getElementById("card-waiting").style.display = "none";
+        document.getElementById("join-code").value = "";
+        document.getElementById("p1-you-badge").style.display = "none";
+        document.getElementById("p2-you-badge").style.display = "none";
+
+        // Clear URL param
+        history.replaceState({}, "", window.location.pathname);
+      }
+    </script>
+  </body>
+</html>

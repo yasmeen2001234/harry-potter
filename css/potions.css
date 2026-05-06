@@ -1,0 +1,924 @@
+/* =============================================
+     CSS VARIABLES & RESET
+  ============================================= */
+@import url("https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=IM+Fell+English:ital@0;1&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap");
+
+:root {
+  --gold: #c9a84c;
+  --gold-light: #f0d080;
+  --copper: #b87333;
+  --deep-brown: #1a0e05;
+  --mid-brown: #2d1a0a;
+  --warm-brown: #3d2510;
+  --parchment: #f5e6c8;
+  --parchment-dark: #d4bc8a;
+  --ink: #2a1a0a;
+  --smoke-green: #2a5a2a;
+  --correct-glow: #c9a84c;
+  --wrong-glow: #3a8a3a;
+
+  /* Potion colors at each stage */
+  --liquid-start: #0d1a2a;
+  --liquid-1: #1a2535;
+  --liquid-2: #2a2040;
+  --liquid-3: #3a1535;
+  --liquid-4: #502050;
+  --liquid-5: #703060;
+  --liquid-6: #905880;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: "Crimson Text", Georgia, serif;
+  background: var(--deep-brown);
+  color: var(--parchment);
+  min-height: 100vh;
+  overflow-x: hidden;
+  user-select: none;
+}
+
+/* =============================================
+     ATMOSPHERIC BACKGROUND — CANDLELIT WORKBENCH
+  ============================================= */
+.scene {
+  min-height: 100vh;
+  background:
+      /* Candle glow center */
+    radial-gradient(
+      ellipse 60% 50% at 50% 70%,
+      rgba(180, 100, 20, 0.18) 0%,
+      transparent 70%
+    ),
+    /* Left candle */
+    radial-gradient(
+        ellipse 25% 40% at 8% 60%,
+        rgba(200, 130, 30, 0.12) 0%,
+        transparent 70%
+      ),
+    /* Right candle */
+    radial-gradient(
+        ellipse 25% 40% at 92% 60%,
+        rgba(200, 130, 30, 0.12) 0%,
+        transparent 70%
+      ),
+    /* Deep background */
+    linear-gradient(180deg, #0a0603 0%, #1a0e05 30%, #2d1a0a 70%, #1a0e05 100%);
+  position: relative;
+}
+
+/* Wood grain texture overlay */
+.scene::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image:
+    repeating-linear-gradient(
+      90deg,
+      transparent 0px,
+      transparent 40px,
+      rgba(0, 0, 0, 0.04) 40px,
+      rgba(0, 0, 0, 0.04) 42px
+    ),
+    repeating-linear-gradient(
+      180deg,
+      transparent 0px,
+      transparent 60px,
+      rgba(255, 200, 100, 0.02) 60px,
+      rgba(255, 200, 100, 0.02) 62px
+    );
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* =============================================
+     LAYOUT
+  ============================================= */
+.layout {
+  display: grid;
+  grid-template-columns: 1fr 340px 1fr;
+  grid-template-rows: auto 1fr auto;
+  grid-template-areas:
+    "header header header"
+    "shelf cauldron-area book"
+    "footer footer footer";
+  min-height: 100vh;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 20px;
+  gap: 20px;
+  position: relative;
+  z-index: 1;
+}
+
+/* =============================================
+     HEADER
+  ============================================= */
+.header {
+  grid-area: header;
+  text-align: center;
+  padding: 24px 0 10px;
+}
+
+.header h1 {
+  font-family: "Cinzel Decorative", serif;
+  font-size: clamp(1.5rem, 4vw, 2.8rem);
+  color: var(--gold-light);
+  text-shadow:
+    0 0 30px rgba(200, 160, 60, 0.6),
+    0 0 60px rgba(200, 160, 60, 0.3);
+  letter-spacing: 0.06em;
+  line-height: 1.2;
+}
+
+.header p {
+  font-family: "IM Fell English", serif;
+  font-style: italic;
+  color: var(--parchment-dark);
+  font-size: 1rem;
+  margin-top: 6px;
+  opacity: 0.8;
+}
+
+/* Decorative divider */
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+}
+.divider::before,
+.divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  opacity: 0.5;
+}
+.divider-icon {
+  color: var(--gold);
+  font-size: 1.1rem;
+  opacity: 0.7;
+}
+
+/* =============================================
+     INGREDIENT SHELF (LEFT)
+  ============================================= */
+.shelf-area {
+  grid-area: shelf;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: center;
+  padding-top: 10px;
+}
+
+.shelf-title {
+  font-family: "IM Fell English", serif;
+  font-size: 0.85rem;
+  color: var(--gold);
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  opacity: 0.8;
+}
+
+.shelf {
+  background: linear-gradient(180deg, #2a1500 0%, #1a0d00 50%, #2a1500 100%);
+  border: 2px solid rgba(180, 120, 40, 0.4);
+  border-radius: 8px;
+  padding: 16px 12px;
+  width: 100%;
+  box-shadow:
+    inset 0 2px 8px rgba(0, 0, 0, 0.5),
+    0 4px 16px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(100, 60, 10, 0.3);
+  position: relative;
+}
+
+/* Shelf wood plank line */
+.shelf::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 10px;
+  background: linear-gradient(180deg, #1a0d00, #3d2000);
+  border-top: 1px solid rgba(180, 120, 40, 0.3);
+  border-radius: 0 0 6px 6px;
+}
+
+.shelf-label {
+  font-family: "Cinzel Decorative", serif;
+  font-size: 0.65rem;
+  color: var(--gold);
+  text-align: center;
+  margin-bottom: 10px;
+  letter-spacing: 0.1em;
+  opacity: 0.7;
+}
+
+.ingredients-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+/* =============================================
+     INGREDIENT ITEM
+  ============================================= */
+.ingredient {
+  background: linear-gradient(135deg, #2d1a08 0%, #1a0d04 100%);
+  border: 1px solid rgba(180, 120, 40, 0.35);
+  border-radius: 8px;
+  padding: 8px 6px;
+  text-align: center;
+  cursor: grab;
+  transition:
+    transform 0.15s,
+    box-shadow 0.15s,
+    opacity 0.3s;
+  position: relative;
+  overflow: hidden;
+}
+
+.ingredient:hover {
+  transform: translateY(-3px) scale(1.04);
+  box-shadow:
+    0 6px 20px rgba(0, 0, 0, 0.5),
+    0 0 12px rgba(200, 160, 60, 0.2);
+  border-color: rgba(200, 160, 60, 0.5);
+}
+
+.ingredient:active {
+  cursor: grabbing;
+  transform: scale(0.96);
+}
+
+.ingredient.used {
+  opacity: 0.3;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.ingredient.wrong-used {
+  opacity: 0.25;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.ingredient-emoji {
+  font-size: 1.8rem;
+  display: block;
+  line-height: 1;
+  margin-bottom: 4px;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
+}
+
+/* Image styles for the shelf ingredients */
+.ingredient-img {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  display: block;
+  margin: 0 auto 4px auto;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
+}
+
+/* Image styles for the recipe book */
+.recipe-img {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  margin-top: 1px;
+}
+
+.ingredient-name {
+  font-size: 0.6rem;
+  color: var(--parchment-dark);
+  line-height: 1.2;
+  font-family: "Crimson Text", serif;
+}
+
+/* Wrong ingredient red shimmer */
+.ingredient.wrong::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(80, 10, 10, 0.2);
+  border-radius: 8px;
+  pointer-events: none;
+}
+
+/* =============================================
+     CAULDRON AREA (CENTER)
+  ============================================= */
+.cauldron-area {
+  grid-area: cauldron-area;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  padding-top: 10px;
+  position: relative;
+}
+
+/* Steam/particle canvas */
+#steam-canvas {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 340px;
+  height: 300px;
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* The cauldron SVG wrapper */
+.cauldron-wrapper {
+  position: relative;
+  width: 280px;
+  height: 280px;
+  margin-top: 60px;
+}
+
+/* Drop zone overlay */
+.drop-zone {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 200px;
+  height: 160px;
+  border-radius: 50%;
+  z-index: 5;
+}
+
+.drop-zone.drag-over {
+  box-shadow: 0 0 30px rgba(200, 160, 60, 0.5);
+  background: rgba(200, 160, 60, 0.08);
+}
+
+/* Cauldron SVG */
+.cauldron-svg {
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.7));
+}
+
+/* Liquid inside cauldron */
+#cauldron-liquid {
+  transition: fill 1.5s ease;
+}
+
+/* Bubble animations */
+.bubble {
+  animation: bubble-rise 2s ease-in infinite;
+  opacity: 0;
+}
+.bubble:nth-child(1) {
+  animation-delay: 0s;
+}
+.bubble:nth-child(2) {
+  animation-delay: 0.7s;
+}
+.bubble:nth-child(3) {
+  animation-delay: 1.4s;
+}
+
+@keyframes bubble-rise {
+  0% {
+    opacity: 0;
+    transform: translateY(0) scale(1);
+  }
+  30% {
+    opacity: 0.6;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-20px) scale(1.5);
+  }
+}
+
+/* Ripple effect on drop */
+.ripple {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.25);
+  animation: ripple-expand 0.6s ease-out forwards;
+  pointer-events: none;
+  z-index: 8;
+}
+
+@keyframes ripple-expand {
+  from {
+    width: 10px;
+    height: 10px;
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  to {
+    width: 120px;
+    height: 60px;
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+/* Cauldron shake on wrong ingredient */
+@keyframes cauldron-shake {
+  0%,
+  100% {
+    transform: translateX(0) rotate(0deg);
+  }
+  10% {
+    transform: translateX(-8px) rotate(-2deg);
+  }
+  20% {
+    transform: translateX(8px) rotate(2deg);
+  }
+  30% {
+    transform: translateX(-8px) rotate(-1.5deg);
+  }
+  40% {
+    transform: translateX(8px) rotate(1.5deg);
+  }
+  50% {
+    transform: translateX(-6px) rotate(-1deg);
+  }
+  60% {
+    transform: translateX(6px) rotate(1deg);
+  }
+  70% {
+    transform: translateX(-4px) rotate(-0.5deg);
+  }
+  80% {
+    transform: translateX(4px) rotate(0.5deg);
+  }
+  90% {
+    transform: translateX(-2px) rotate(0deg);
+  }
+}
+
+.cauldron-wrapper.shaking {
+  animation: cauldron-shake 0.8s ease-in-out;
+}
+
+/* Green smoke */
+.smoke-puff {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  animation: smoke-rise 1.8s ease-out forwards;
+  z-index: 9;
+}
+
+@keyframes smoke-rise {
+  0% {
+    opacity: 0.7;
+    transform: translateY(0) scale(1);
+    filter: blur(2px);
+  }
+  50% {
+    opacity: 0.4;
+    transform: translateY(-60px) scale(2.5) translateX(10px);
+    filter: blur(6px);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-120px) scale(4) translateX(-15px);
+    filter: blur(10px);
+  }
+}
+
+/* Pearl sheen animation for success */
+@keyframes pearl-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.cauldron-wrapper.success .liquid-group {
+  /* Handled via JS canvas */
+}
+
+/* =============================================
+     CAULDRON STATUS
+  ============================================= */
+.cauldron-status {
+  font-family: "IM Fell English", serif;
+  font-style: italic;
+  font-size: 0.85rem;
+  color: var(--parchment-dark);
+  text-align: center;
+  min-height: 1.4em;
+  transition: color 0.5s;
+}
+
+.cauldron-status.error {
+  color: #88cc55;
+}
+.cauldron-status.success {
+  color: #f0a0c0;
+}
+
+/* Progress dots */
+.progress-dots {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(180, 120, 40, 0.2);
+  border: 1px solid rgba(180, 120, 40, 0.4);
+  transition:
+    background 0.4s,
+    box-shadow 0.4s;
+}
+
+.dot.filled {
+  background: var(--gold);
+  box-shadow: 0 0 8px rgba(200, 160, 60, 0.6);
+}
+
+/* =============================================
+     RECIPE BOOK (RIGHT)
+  ============================================= */
+.book-area {
+  grid-area: book;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 10px;
+}
+
+.recipe-book {
+  background: linear-gradient(160deg, #f5e6c8 0%, #e8d4a8 40%, #d4bc8a 100%);
+  border-radius: 4px 12px 12px 4px;
+  padding: 20px 16px;
+  width: 100%;
+  max-width: 280px;
+  box-shadow:
+    -4px 0 0 #8a6030,
+    -6px 0 0 #6a4820,
+    0 4px 20px rgba(0, 0, 0, 0.5),
+    inset 0 0 40px rgba(180, 120, 40, 0.15);
+  position: relative;
+  color: var(--ink);
+  min-height: 400px;
+}
+
+/* Page line texture */
+.recipe-book::before {
+  content: "";
+  position: absolute;
+  top: 20px;
+  bottom: 20px;
+  left: 20px;
+  right: 20px;
+  background-image: repeating-linear-gradient(
+    180deg,
+    transparent 0px,
+    transparent 22px,
+    rgba(100, 60, 10, 0.12) 22px,
+    rgba(100, 60, 10, 0.12) 23px
+  );
+  pointer-events: none;
+}
+
+/* Spine effect */
+.recipe-book::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 24px;
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.15), transparent);
+  border-radius: 4px 0 0 4px;
+  pointer-events: none;
+}
+
+.book-title {
+  font-family: "Cinzel Decorative", serif;
+  font-size: 0.75rem;
+  text-align: center;
+  color: #6a3010;
+  margin-bottom: 6px;
+  letter-spacing: 0.05em;
+  position: relative;
+}
+
+.book-subtitle {
+  font-family: "IM Fell English", serif;
+  font-style: italic;
+  font-size: 0.8rem;
+  text-align: center;
+  color: #8a5020;
+  margin-bottom: 14px;
+  position: relative;
+}
+
+.book-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #8a6030, transparent);
+  margin-bottom: 14px;
+  position: relative;
+}
+
+.recipe-list {
+  list-style: none;
+  position: relative;
+}
+
+.recipe-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 6px 0;
+  font-family: "Crimson Text", serif;
+  font-size: 0.88rem;
+  color: #3a1a05;
+  border-bottom: 1px dotted rgba(100, 60, 10, 0.15);
+  transition: all 0.4s;
+  position: relative;
+}
+
+.recipe-item:last-child {
+  border-bottom: none;
+}
+
+.recipe-check {
+  width: 14px;
+  height: 14px;
+  border: 1.5px solid #8a5020;
+  border-radius: 2px;
+  flex-shrink: 0;
+  margin-top: 2px;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+}
+
+.recipe-item.checked .recipe-check {
+  background: #6a3010;
+  border-color: #6a3010;
+  color: #f5e6c8;
+}
+
+.recipe-item.checked .recipe-text {
+  text-decoration: line-through;
+  opacity: 0.5;
+  color: #6a3010;
+}
+
+.recipe-emoji {
+  font-size: 0.9rem;
+}
+
+.recipe-text {
+  line-height: 1.3;
+}
+
+.book-note {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px dashed rgba(100, 60, 10, 0.2);
+  font-family: "IM Fell English", serif;
+  font-style: italic;
+  font-size: 0.75rem;
+  color: #8a5020;
+  text-align: center;
+  position: relative;
+  line-height: 1.5;
+}
+
+/* =============================================
+     SUCCESS OVERLAY
+  ============================================= */
+.success-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.8s ease;
+}
+
+.success-overlay.show {
+  opacity: 1;
+  pointer-events: all;
+}
+
+.success-bg {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(120, 40, 80, 0.85) 0%,
+    rgba(10, 5, 3, 0.92) 70%
+  );
+  backdrop-filter: blur(4px);
+}
+
+.success-card {
+  position: relative;
+  text-align: center;
+  padding: 50px 60px;
+  max-width: 560px;
+}
+
+/* Animated border */
+.success-card::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: 4px;
+  background: linear-gradient(
+    45deg,
+    #ff69b4,
+    #c0c0c0,
+    #ffb6c1,
+    #e0e0e0,
+    #ff1493,
+    #ff69b4
+  );
+  background-size: 300% 300%;
+  animation: pearl-border 3s ease infinite;
+  z-index: -1;
+  border-radius: 8px;
+}
+
+.success-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: #1a0710;
+  border-radius: 6px;
+  z-index: -1;
+}
+
+@keyframes pearl-border {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.success-emoji {
+  font-size: 3.5rem;
+  display: block;
+  margin-bottom: 16px;
+  animation: float-emoji 3s ease-in-out infinite;
+}
+
+@keyframes float-emoji {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-10px) scale(1.08);
+  }
+}
+
+.success-title {
+  font-family: "Cinzel Decorative", serif;
+  font-size: clamp(1.1rem, 3vw, 1.7rem);
+  background: linear-gradient(
+    135deg,
+    #ff69b4 0%,
+    #c0c0c0 30%,
+    #ffb6c1 50%,
+    #e0e0e0 70%,
+    #ff69b4 100%
+  );
+  background-size: 200% 200%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: pearl-text 4s ease infinite;
+  margin-bottom: 14px;
+  line-height: 1.3;
+}
+
+@keyframes pearl-text {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.success-desc {
+  font-family: "IM Fell English", serif;
+  font-style: italic;
+  color: var(--parchment-dark);
+  font-size: 0.95rem;
+  line-height: 1.6;
+  margin-bottom: 28px;
+}
+
+.success-btn {
+  background: linear-gradient(135deg, #ff69b4, #c0a0d0);
+  border: none;
+  color: #fff;
+  font-family: "Cinzel Decorative", serif;
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  padding: 12px 28px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
+  box-shadow: 0 4px 16px rgba(200, 80, 150, 0.4);
+}
+
+.success-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(200, 80, 150, 0.5);
+}
+
+/* =============================================
+     FLYING INGREDIENT ANIMATION
+  ============================================= */
+.flying-ingredient {
+  position: fixed;
+  pointer-events: none;
+  font-size: 1.8rem;
+  z-index: 50;
+  animation: fly-to-cauldron 0.5s ease-in forwards;
+}
+
+@keyframes fly-to-cauldron {
+  0% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+  60% {
+    transform: scale(0.6) rotate(-20deg);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(0.1) rotate(30deg);
+    opacity: 0;
+  }
+}
+
+/* =============================================
+     FOOTER / HINT BAR
+  ============================================= */
+.footer {
+  grid-area: footer;
+  text-align: center;
+  padding: 8px 0 16px;
+  font-family: "IM Fell English", serif;
+  font-style: italic;
+  color: rgba(200, 160, 80, 0.4);
+  font-size: 0.78rem;
+}
+
+/* =============================================
+     DRAG GHOST HIDE
+  ============================================= */
+.drag-ghost {
+  position: fixed;
+  top: -1000px;
+  left: -1000px;
+  width: 60px;
+  height: 60px;
+  pointer-events: none;
+}

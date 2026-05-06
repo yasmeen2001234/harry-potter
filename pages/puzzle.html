@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hogwarts Jigsaw Puzzle</title>
+
+    <link href="https://fonts.cdnfonts.com/css/harry-potter" rel="stylesheet" />
+    <link rel="stylesheet" href="/css/puzzle.css" />
+  </head>
+  <body>
+    <h1>Magical Jigsaw Puzzle</h1>
+    <div id="level-indicator">Level 1</div>
+
+    <div class="game-container">
+      <div id="puzzle-board"></div>
+    </div>
+
+    <div id="message">✨ Mischief Managed! Puzzle Complete! ✨</div>
+
+    <div class="controls">
+      <button onclick="initGame()">Restart Level</button>
+      <button id="next-btn" onclick="nextLevel()">Next Level ➔</button>
+    </div>
+
+    <script>
+      const rows = 3;
+      const cols = 4;
+      const pieceWidth = 200;
+      const pieceHeight = 150;
+
+      // Array of images for different levels
+      const levelImages = [
+        "https://4kwallpapers.com/images/walls/thumbs_3t/13694.jpg",
+        "https://images6.alphacoders.com/340/thumb-1920-340602.jpg",
+        "https://images7.alphacoders.com/922/thumb-1920-922824.jpg",
+        "https://images6.alphacoders.com/113/thumb-1920-1138396.jpg",
+        "https://images5.alphacoders.com/119/thumb-1920-1192124.jpg",
+        "https://images5.alphacoders.com/130/thumb-1920-1303533.png",
+      ];
+
+      let currentLevel = 0;
+      let draggedPiece = null;
+
+      const board = document.getElementById("puzzle-board");
+      const message = document.getElementById("message");
+      const nextBtn = document.getElementById("next-btn");
+      const levelIndicator = document.getElementById("level-indicator");
+
+      function initGame() {
+        board.innerHTML = "";
+        message.style.display = "none";
+        nextBtn.style.display = "none";
+        levelIndicator.innerText = `Level ${currentLevel + 1} of ${levelImages.length}`;
+
+        let pieces = [];
+        let slots = [];
+
+        // 1. Create the Board Slots
+        for (let i = 0; i < rows * cols; i++) {
+          const slot = document.createElement("div");
+          slot.classList.add("slot");
+          slot.dataset.correctIndex = i;
+
+          slot.addEventListener("dragover", (e) => e.preventDefault());
+          slot.addEventListener("dragenter", (e) => e.preventDefault());
+          slot.addEventListener("drop", handleDrop);
+
+          board.appendChild(slot);
+          slots.push(slot);
+        }
+
+        // 2. Create the Puzzle Pieces
+        for (let r = 0; r < rows; r++) {
+          for (let c = 0; c < cols; c++) {
+            const index = r * cols + c;
+            const piece = document.createElement("div");
+            piece.classList.add("piece");
+            piece.draggable = true;
+            piece.dataset.index = index;
+
+            // Set the dynamic background image based on the current level
+            piece.style.backgroundImage = `url('${levelImages[currentLevel]}')`;
+            piece.style.backgroundPosition = `-${c * pieceWidth}px -${r * pieceHeight}px`;
+
+            piece.addEventListener("dragstart", function () {
+              draggedPiece = this;
+              setTimeout(() => this.classList.add("dragging"), 0);
+            });
+
+            piece.addEventListener("dragend", function () {
+              this.classList.remove("dragging");
+              draggedPiece = null;
+              checkWin();
+            });
+
+            pieces.push(piece);
+          }
+        }
+
+        // 3. Shuffle Pieces and put them directly onto the board
+        pieces.sort(() => Math.random() - 0.5);
+        pieces.forEach((piece, i) => {
+          slots[i].appendChild(piece);
+        });
+
+        checkWin();
+      }
+
+      function handleDrop(e) {
+        e.preventDefault();
+        if (this.classList.contains("slot") && !this.hasChildNodes()) {
+          this.appendChild(draggedPiece);
+        } else if (this.classList.contains("slot") && this.hasChildNodes()) {
+          const existingPiece = this.firstChild;
+          draggedPiece.parentNode.appendChild(existingPiece);
+          this.appendChild(draggedPiece);
+        } else if (this.classList.contains("piece")) {
+          const targetSlot = this.parentNode;
+          const originSlot = draggedPiece.parentNode;
+          originSlot.appendChild(this);
+          targetSlot.appendChild(draggedPiece);
+        }
+      }
+
+      function checkWin() {
+        const slots = board.querySelectorAll(".slot");
+        let isWin = true;
+
+        slots.forEach((slot) => {
+          const piece = slot.firstChild;
+          if (!piece) {
+            isWin = false;
+          } else if (slot.dataset.correctIndex !== piece.dataset.index) {
+            isWin = false;
+          }
+        });
+
+        if (isWin) {
+          if (currentLevel < levelImages.length - 1) {
+            message.innerText = "✨ Mischief Managed! Level Complete! ✨";
+            message.style.display = "block";
+            nextBtn.style.display = "block";
+          } else {
+            message.innerText =
+              "🏆 Grand Sorcerer! You've completed all levels! 🏆";
+            message.style.display = "block";
+            nextBtn.style.display = "none";
+          }
+        }
+      }
+
+      function nextLevel() {
+        if (currentLevel < levelImages.length - 1) {
+          currentLevel++;
+          initGame();
+        }
+      }
+
+      // Start the game on load
+      initGame();
+    </script>
+  </body>
+</html>
